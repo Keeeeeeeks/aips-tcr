@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "meter_presets": {
+    "4/4": { "beats_per_bar": 4, "denominator": 4, "public_safe": true },
+    "3/4": { "beats_per_bar": 3, "denominator": 4, "public_safe": true },
+    "6/8": { "beats_per_bar": 6, "denominator": 8, "public_safe": true },
+    "5/4": { "beats_per_bar": 5, "denominator": 4, "public_safe": false, "admin_only": true },
+    "7/8": { "beats_per_bar": 7, "denominator": 8, "public_safe": false, "admin_only": true }
+  },
+  "style_envelope": {
+    "public_votes": "Fixed-menu options may carry tempo, key, and meter only because admins authored the menu; listener free text never reaches the conductor directly.",
+    "tempo_min_bpm": 60,
+    "tempo_max_bpm": 220
+  },
+  "instrument_pools": {
+    "percussion": [
+      { "id": "standard-kit", "label": "Standard Kit", "program": 0, "bank": 128, "pack": "general-midi" },
+      { "id": "room-kit", "label": "Room Kit", "program": 8, "bank": 128, "pack": "general-midi" },
+      { "id": "power-kit", "label": "Power Kit", "program": 16, "bank": 128, "pack": "general-midi" },
+      { "id": "jazz-kit", "label": "Jazz Kit", "program": 32, "bank": 128, "pack": "general-midi" }
+    ],
+    "bass": [
+      { "id": "upright", "label": "Acoustic Bass", "program": 32, "bank": 0, "pack": "general-midi" },
+      { "id": "finger", "label": "Electric Bass (finger)", "program": 33, "bank": 0, "pack": "general-midi" },
+      { "id": "picked", "label": "Electric Bass (picked)", "program": 34, "bank": 0, "pack": "general-midi" },
+      { "id": "fretless", "label": "Fretless Bass", "program": 35, "bank": 0, "pack": "general-midi" },
+      { "id": "synth-sub", "label": "Synth Bass", "program": 38, "bank": 0, "pack": "general-midi" }
+    ],
+    "piano": [
+      { "id": "grand", "label": "Acoustic Grand", "program": 0, "bank": 0, "pack": "general-midi" },
+      { "id": "rhodes", "label": "Electric Piano", "program": 4, "bank": 0, "pack": "general-midi" },
+      { "id": "organ", "label": "Drawbar Organ", "program": 16, "bank": 0, "pack": "general-midi" },
+      { "id": "nylon-guitar", "label": "Nylon Guitar", "program": 24, "bank": 0, "pack": "general-midi" },
+      { "id": "mallet", "label": "Vibraphone", "program": 11, "bank": 0, "pack": "general-midi" }
+    ],
+    "lead": [
+      { "id": "trumpet", "label": "Trumpet", "program": 56, "bank": 0, "pack": "general-midi" },
+      { "id": "alto-sax", "label": "Alto Sax", "program": 65, "bank": 0, "pack": "general-midi" },
+      { "id": "flute", "label": "Flute", "program": 73, "bank": 0, "pack": "general-midi" },
+      { "id": "violin", "label": "Violin", "program": 40, "bank": 0, "pack": "general-midi" },
+      { "id": "square", "label": "Square Lead", "program": 80, "bank": 0, "pack": "general-midi" },
+      { "id": "saw", "label": "Saw Lead", "program": 81, "bank": 0, "pack": "general-midi" }
+    ],
+    "texture": [
+      { "id": "new-age-pad", "label": "New Age Pad", "program": 88, "bank": 0, "pack": "general-midi" },
+      { "id": "warm-pad", "label": "Warm Pad", "program": 89, "bank": 0, "pack": "general-midi" },
+      { "id": "choir-pad", "label": "Choir Pad", "program": 91, "bank": 0, "pack": "general-midi" },
+      { "id": "halo-pad", "label": "Halo Pad", "program": 94, "bank": 0, "pack": "general-midi" },
+      { "id": "crystal", "label": "Crystal", "program": 98, "bank": 0, "pack": "general-midi" }
+    ]
+  },
+  "soundfont_packs": {
+    "general-midi": {
+      "label": "MuseScore General / FluidR3-compatible General MIDI",
+      "license": "MIT-compatible General MIDI soundfont required for deployment",
+      "source_url": "https://ftp.osuosl.org/pub/musescore/soundfont/MuseScore_General/",
+      "caveat": "Default deploy-safe target; install on Hetzner and keep license file nearby."
+    },
+    "generaluser-gs": {
+      "label": "GeneralUser GS",
+      "license": "Custom permissive; conditional",
+      "source_url": "https://github.com/mrbumpy409/GeneralUser-GS",
+      "caveat": "Optional only after documenting sample-provenance caveats."
+    },
+    "vsco2-ce": {
+      "label": "VSCO2 Community Edition",
+      "license": "CC0; deferred",
+      "source_url": "https://github.com/sgossner/VSCO-2-CE",
+      "caveat": "Deferred unless a clean SF2/SF3 conversion and license file are added explicitly."
+    }
+  }
+}

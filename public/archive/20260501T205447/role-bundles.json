@@ -1,0 +1,439 @@
+{
+  "conductor_state": {
+    "segment_id": 0,
+    "tempo_bpm": 150,
+    "key": "A minor",
+    "section_bars": 1,
+    "active_soloist": "percussion",
+    "psychosis_level": 0.78,
+    "live_prompt": "150 bpm, frantic breakcore pressure, distorted chopped breaks, dissociated reverb haze, unstable but still emotionally coherent.",
+    "role_directives": {
+      "percussion": "You are the percussionist. Keep a soft, late-night pulse with light swing. Use kick/snare/hat-like MIDI notes sparsely. Add small fills near segment endings only. If uncertain, play a minimal support groove. ONLY change BPM, tempo, key, or chord grid when the prompt tells you to. Improvise based on what others are playing.\n\nPreset mode overlay (Sewerslvt): Drive the section with high-BPM chopped breakbeats: rapid kick/snare edits, syncopated ghost hits, stuttered hats, and violent but controlled fills at phrase endings.",
+      "bass": "You are the bass player. Anchor the ensemble with root motion, fifths, pedal tones, and simple walking movement. Stay supportive unless explicitly assigned a solo. Pepper in some hard tones. If the ensemble drifts, return to roots and long tones. ONLY change BPM, tempo, key, or chord grid when the prompt tells you to. Improvise based on what others are playing.\n\nPreset mode overlay (Sewerslvt): Use distorted sub pulses and short octave lunges that reinforce the breakbeat without overcrowding it. Keep the low end urgent and compressed.",
+      "piano": "You are the harmony player. Use sparse Rhodes-like voicings, soft comping, and simple chord color. Leave space for the lead. Suggest substitutions only inside the conductor's chord grid. If uncertain, play long, quiet chord tones. ONLY change BPM, tempo, key, or chord grid when the prompt tells you to. Improvise based on what others are playing.\n\nPreset mode overlay (Sewerslvt): Add sparse detuned minor-key fragments: short broken chords, lonely upper-register hits, and glitchy rhythmic gaps rather than smooth comping.",
+      "lead": "You are the lead voice. Play short lyrical motifs, leave silence, and avoid endless soloing. Build tension for a few bars, then resolve and yield. If the conductor says another role is foreground, support with sparse answers only. ONLY change BPM, tempo, key, or chord grid when the prompt tells you to. Improvise based on what others are playing.",
+      "texture": "You are the texture layer. Add ambient glue: pads, drones, soft shimmer, and slow-moving color. Avoid foreground melodies. Your job is to make the ensemble feel spacious and haunted without competing with bass, piano, or lead. If uncertain, hold quiet long tones."
+    },
+    "generation_params": null
+  },
+  "preset_modes": {
+    "active_profile": "sewerslvt",
+    "active_roles": {
+      "bass": true,
+      "lead": false,
+      "percussion": true,
+      "piano": true,
+      "texture": false
+    },
+    "profiles": {
+      "none": {
+        "label": "None",
+        "description": "Use the base persona prompts without a preset overlay.",
+        "live_prompt": "Keep the band spacious, late-night, and coherent.",
+        "psychosis_level": 0.25,
+        "tempo_bpm": 92,
+        "key": "A minor",
+        "roles": {}
+      },
+      "sewerslvt": {
+        "label": "Sewerslvt",
+        "description": "High-BPM breakcore pressure, distorted drums, dissociated ambience, and blown-out emotional density.",
+        "live_prompt": "150 bpm, frantic breakcore pressure, distorted chopped breaks, dissociated reverb haze, unstable but still emotionally coherent.",
+        "psychosis_level": 0.78,
+        "tempo_bpm": 150,
+        "key": "A minor",
+        "roles": {
+          "percussion": "Drive the section with high-BPM chopped breakbeats: rapid kick/snare edits, syncopated ghost hits, stuttered hats, and violent but controlled fills at phrase endings.",
+          "bass": "Use distorted sub pulses and short octave lunges that reinforce the breakbeat without overcrowding it. Keep the low end urgent and compressed.",
+          "piano": "Add sparse detuned minor-key fragments: short broken chords, lonely upper-register hits, and glitchy rhythmic gaps rather than smooth comping.",
+          "lead": "Play distant, smeared melodic shards with anxious contour. Short motifs only; let reverb trails and silence carry the emotion.",
+          "texture": "Create a crushed atmospheric wash: noisy pads, metallic shimmer, long reverb bloom, and unstable stereo haze that feels overloaded but not random."
+        }
+      },
+      "bladee": {
+        "label": "Bladee",
+        "description": "Icy cloud-rap atmosphere, fragile hooks, glossy melancholy, and sparse digital bounce.",
+        "live_prompt": "92 bpm, icy cloud-rap melancholy, glossy synthetic space, fragile hook energy, sparse bounce, weightless and blue.",
+        "psychosis_level": 0.42,
+        "tempo_bpm": 92,
+        "key": "F# minor",
+        "roles": {
+          "percussion": "Keep drums minimal and glossy: light trap hats, soft snare accents, occasional pitched perc ticks, and lots of negative space.",
+          "bass": "Use rounded 808-style root movement with gentle slides and long decay. Stay simple, supportive, and emotionally cold.",
+          "piano": "Play thin bell-like chords and soft digital plucks. Favor suspended, unresolved voicings with air between hits.",
+          "lead": "Write fragile, hook-like melodic fragments: small intervals, repeated cells, and a numb-but-sweet contour.",
+          "texture": "Layer icy pads, vocal-like synthetic smears, crystalline delays, and faint digital sparkle around the edges."
+        }
+      },
+      "clairo": {
+        "label": "Clairo",
+        "description": "Warm bedroom-pop intimacy, gentle pocket, soft chords, and understated melodic sweetness.",
+        "live_prompt": "78 bpm, warm bedroom-pop intimacy, soft pocket, gentle chords, close-mic tenderness, understated and human.",
+        "psychosis_level": 0.18,
+        "tempo_bpm": 78,
+        "key": "C major",
+        "roles": {
+          "percussion": "Use a tiny soft kit feel: brushed snare, muted kick, simple hats, and relaxed timing that leans slightly behind the beat.",
+          "bass": "Play warm round bass notes with simple root-fifth motion and occasional passing tones. Keep it melodic but humble.",
+          "piano": "Use soft Rhodes-like voicings, gentle major-seventh colors, and short chord answers. Avoid density.",
+          "lead": "Play small singable phrases, almost like a hummed vocal idea. Keep the contour sweet and conversational.",
+          "texture": "Add tape warmth, room tone, soft chorus, and light pad beds that make the section feel close and intimate."
+        }
+      },
+      "thundercat": {
+        "label": "Thundercat",
+        "description": "Virtuosic funk bass center, jazzy harmony, playful cosmic fusion, and elastic pocket.",
+        "live_prompt": "116 bpm, cosmic jazz-funk fusion, virtuosic bass center, elastic pocket, playful harmony, bright and animated.",
+        "psychosis_level": 0.36,
+        "tempo_bpm": 116,
+        "key": "E minor",
+        "roles": {
+          "percussion": "Set an elastic funk pocket with syncopated ghost notes, tight hats, and occasional playful fills that respond to the bass.",
+          "bass": "Foreground fast melodic bass: octave jumps, sixteenth-note runs, chromatic approach notes, and funky syncopation while preserving the root motion.",
+          "piano": "Use jazzy extended voicings: ninths, elevenths, altered passing colors, and comped stabs that leave room for bass virtuosity.",
+          "lead": "Play bright fusion phrases with nimble bends, quick responses, and playful chromatic turns. Avoid overpowering the bass.",
+          "texture": "Add cosmic synth pads, glassy arps, and warm chorus shimmer that makes the groove feel spacey and animated."
+        }
+      },
+      "death_grips": {
+        "label": "Death Grips",
+        "description": "Industrial punk-rap impact, abrasive rhythm, clipped aggression, and chaotic machine pressure.",
+        "live_prompt": "130 bpm, abrasive industrial pressure, clipped aggression, machine-like chaos, distorted impact, confrontational and unstable.",
+        "psychosis_level": 0.88,
+        "tempo_bpm": 130,
+        "key": "D minor",
+        "roles": {
+          "percussion": "Use harsh, clipped, machine-like drums: aggressive kicks, dry snares, broken loops, sudden gaps, and confrontational accents.",
+          "bass": "Use distorted bass stabs and grinding low notes. Keep it repetitive, physical, and hostile rather than melodic.",
+          "piano": "Use percussive clusters, dissonant stabs, and short hammered notes. Avoid pretty harmony.",
+          "lead": "Use jagged alarm-like phrases, short distorted hooks, and angular leaps. Make it feel shouted rather than sung.",
+          "texture": "Layer industrial noise, digital clipping artifacts, metallic hits, and compressed chaos around the groove."
+        }
+      },
+      "blood-orange": {
+        "label": "Blood Orange",
+        "description": "Elegant alt-R&B / art-pop groove, bittersweet harmony, soft funk, and warm cinematic air.",
+        "live_prompt": "96 bpm, elegant art-pop R&B groove, bittersweet harmony, warm soft-funk pocket, cinematic air, restrained and stylish.",
+        "psychosis_level": 0.28,
+        "tempo_bpm": 96,
+        "key": "Bb minor",
+        "roles": {
+          "percussion": "Use a restrained soft-funk groove: crisp backbeat, light syncopation, tasteful percussion, and a relaxed but confident pocket.",
+          "bass": "Play smooth melodic bass with funk-informed syncopation, tasteful slides, and lyrical movement that supports the harmony.",
+          "piano": "Use bittersweet electric-piano chords: minor sevenths, ninths, suspended colors, and elegant rhythmic comping.",
+          "lead": "Play restrained sax/synth-like phrases: lyrical, fashionable, and emotionally direct, with short call-and-response ideas.",
+          "texture": "Add warm pads, soft chorus, city-night ambience, and cinematic shimmer that leaves the groove uncluttered."
+        }
+      },
+      "goblin": {
+        "label": "Goblin Mode",
+        "description": "Unhinged dungeon rave energy: crooked minor harmony, twitchy creature percussion, distorted low-end lunges, and mischievous synth shrieks.",
+        "live_prompt": "138 bpm, goblin mode dungeon rave, crooked minor harmony, twitchy creature percussion, distorted low-end lunges, mischievous synth shrieks, feral but playable.",
+        "psychosis_level": 0.82,
+        "tempo_bpm": 138,
+        "key": "D minor",
+        "roles": {
+          "percussion": "Use twitchy creature percussion: skittering hats, crooked snares, stomp-like kicks, sudden little fills, and mischievous off-grid accents that still lock to the section.",
+          "bass": "Use distorted goblin low-end: short lunges, octave jumps, root-stabs, and snarling approaches. Keep it feral, heavy, and rhythmically clear.",
+          "piano": "Play crooked minor clusters and haunted toy-keyboard stabs. Favor tritones, crunchy close intervals, and short call-and-response jabs instead of pretty comping.",
+          "lead": "Play impish synth shrieks and sneaky hook fragments: angular leaps, chromatic bites, and quick taunting answers that feel mischievous rather than heroic.",
+          "texture": "Layer dungeon slime ambience, unstable shimmer, metallic drip, tiny monster noises, and warped pad trails around the groove without masking the pulse."
+        }
+      }
+    },
+    "updated_at": "2026-05-01T01:51:47Z"
+  },
+  "agent_mode": "heuristic",
+  "render_engine": "internal_synth+effects",
+  "llm_status": {
+    "connected": false,
+    "mode": "heuristic",
+    "source": "heuristic",
+    "message": "The segment conductor is running in heuristic mode, not LLM mode."
+  },
+  "generation_params_status": {
+    "connected": false,
+    "mode": "heuristic",
+    "source": "heuristic",
+    "message": "Generation parameter planning is only active in LLM mode."
+  },
+  "generation_params": null,
+  "seed": 20000,
+  "bundles": [
+    {
+      "segment_id": 0,
+      "role": "percussion",
+      "status": "playing",
+      "events": [
+        {
+          "bar": 1,
+          "beat": 1.0,
+          "duration_beats": 0.2211668539711768,
+          "pitch": 36,
+          "velocity": 92
+        },
+        {
+          "bar": 1,
+          "beat": 2.0,
+          "duration_beats": 0.23341415044586536,
+          "pitch": 42,
+          "velocity": 98
+        },
+        {
+          "bar": 1,
+          "beat": 3.0,
+          "duration_beats": 0.23232624556699427,
+          "pitch": 36,
+          "velocity": 101
+        },
+        {
+          "bar": 1,
+          "beat": 4.0,
+          "duration_beats": 0.2278155350060445,
+          "pitch": 42,
+          "velocity": 94
+        },
+        {
+          "bar": 1,
+          "beat": 2.5,
+          "duration_beats": 0.12,
+          "pitch": 38,
+          "velocity": 70
+        },
+        {
+          "bar": 1,
+          "beat": 4.5,
+          "duration_beats": 0.12,
+          "pitch": 38,
+          "velocity": 74
+        }
+      ],
+      "metadata": {
+        "density": 0.75,
+        "solo_intensity": 0.55,
+        "supports_soloist": false,
+        "source": "heuristic",
+        "instrument": {
+          "id": "standard-kit",
+          "label": "Standard Kit",
+          "program": 0,
+          "bank": 128,
+          "pack": "general-midi"
+        }
+      }
+    },
+    {
+      "segment_id": 0,
+      "role": "bass",
+      "status": "playing",
+      "events": [
+        {
+          "bar": 1,
+          "beat": 1.0,
+          "duration_beats": 0.8674243197518652,
+          "pitch": 33,
+          "velocity": 78
+        },
+        {
+          "bar": 1,
+          "beat": 2.0,
+          "duration_beats": 0.8715000827067365,
+          "pitch": 40,
+          "velocity": 78
+        },
+        {
+          "bar": 1,
+          "beat": 3.0,
+          "duration_beats": 0.9194374469395485,
+          "pitch": 45,
+          "velocity": 78
+        },
+        {
+          "bar": 1,
+          "beat": 4.0,
+          "duration_beats": 0.9152164656459947,
+          "pitch": 45,
+          "velocity": 78
+        }
+      ],
+      "metadata": {
+        "density": 0.5,
+        "solo_intensity": 0.12,
+        "supports_soloist": true,
+        "source": "heuristic",
+        "instrument": {
+          "id": "synth-sub",
+          "label": "Synth Bass",
+          "program": 38,
+          "bank": 0,
+          "pack": "general-midi"
+        }
+      }
+    },
+    {
+      "segment_id": 0,
+      "role": "piano",
+      "status": "playing",
+      "events": [
+        {
+          "bar": 1,
+          "beat": 1.0564912250313196,
+          "duration_beats": 0.5946942813027606,
+          "pitch": 57,
+          "velocity": 52
+        },
+        {
+          "bar": 1,
+          "beat": 1.0264718402999717,
+          "duration_beats": 0.4576330110589951,
+          "pitch": 60,
+          "velocity": 52
+        },
+        {
+          "bar": 1,
+          "beat": 1.037397814066535,
+          "duration_beats": 0.40342714166140325,
+          "pitch": 67,
+          "velocity": 52
+        },
+        {
+          "bar": 1,
+          "beat": 1.7925706811028423,
+          "duration_beats": 0.48134226583563533,
+          "pitch": 57,
+          "velocity": 49
+        },
+        {
+          "bar": 1,
+          "beat": 1.7582733914919324,
+          "duration_beats": 0.2796878212687991,
+          "pitch": 72,
+          "velocity": 49
+        },
+        {
+          "bar": 1,
+          "beat": 1.7967144497407854,
+          "duration_beats": 0.4728371571596188,
+          "pitch": 67,
+          "velocity": 49
+        },
+        {
+          "bar": 1,
+          "beat": 3.0102281484289564,
+          "duration_beats": 0.43512078474862254,
+          "pitch": 69,
+          "velocity": 49
+        },
+        {
+          "bar": 1,
+          "beat": 3.0119680287608768,
+          "duration_beats": 0.644689930203647,
+          "pitch": 72,
+          "velocity": 49
+        },
+        {
+          "bar": 1,
+          "beat": 3.05484384119709,
+          "duration_beats": 0.46501204863866025,
+          "pitch": 55,
+          "velocity": 49
+        }
+      ],
+      "metadata": {
+        "density": 1.0,
+        "solo_intensity": 0.12,
+        "supports_soloist": true,
+        "source": "heuristic",
+        "instrument": {
+          "id": "grand",
+          "label": "Acoustic Grand",
+          "program": 103,
+          "bank": 0,
+          "pack": "general-midi"
+        }
+      }
+    },
+    {
+      "segment_id": 0,
+      "role": "lead",
+      "status": "playing",
+      "events": [
+        {
+          "bar": 1,
+          "beat": 1.0067010228243343,
+          "duration_beats": 0.1878055103731689,
+          "pitch": 93,
+          "velocity": 77
+        },
+        {
+          "bar": 1,
+          "beat": 1.465059434589935,
+          "duration_beats": 0.304877453913727,
+          "pitch": 94,
+          "velocity": 77
+        },
+        {
+          "bar": 1,
+          "beat": 2.0430041679291486,
+          "duration_beats": 0.29669497738590717,
+          "pitch": 100,
+          "velocity": 77
+        },
+        {
+          "bar": 1,
+          "beat": 2.523035978720482,
+          "duration_beats": 0.2264548349587176,
+          "pitch": 103,
+          "velocity": 77
+        }
+      ],
+      "metadata": {
+        "density": 0.5,
+        "solo_intensity": 0.12,
+        "supports_soloist": true,
+        "source": "heuristic",
+        "instrument": {
+          "id": "trumpet",
+          "label": "Trumpet",
+          "program": 82,
+          "bank": 0,
+          "pack": "general-midi"
+        }
+      }
+    },
+    {
+      "segment_id": 0,
+      "role": "texture",
+      "status": "playing",
+      "events": [
+        {
+          "bar": 1,
+          "beat": 1.0,
+          "duration_beats": 7.6,
+          "pitch": 76,
+          "velocity": 31
+        },
+        {
+          "bar": 1,
+          "beat": 1.0,
+          "duration_beats": 7.6,
+          "pitch": 93,
+          "velocity": 31
+        }
+      ],
+      "metadata": {
+        "density": 0.25,
+        "solo_intensity": 0.12,
+        "supports_soloist": true,
+        "source": "heuristic",
+        "instrument": {
+          "id": "new-age-pad",
+          "label": "New Age Pad",
+          "program": 95,
+          "bank": 0,
+          "pack": "general-midi"
+        }
+      }
+    }
+  ]
+}

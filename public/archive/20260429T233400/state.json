@@ -1,0 +1,318 @@
+{
+  "tempo_bpm": 138,
+  "key": "D minor",
+  "bars": 1,
+  "roles": [
+    "bass",
+    "lead",
+    "percussion",
+    "piano",
+    "texture"
+  ],
+  "stream": "index.m3u8",
+  "status": {
+    "bass": "playing",
+    "lead": "playing",
+    "percussion": "playing",
+    "piano": "playing",
+    "texture": "playing"
+  },
+  "events": [
+    {
+      "role": "lead",
+      "bar": 1,
+      "beat": 1.0083333333333333,
+      "duration_beats": 0.14583333333333334,
+      "pitch": 83,
+      "velocity": 78
+    },
+    {
+      "role": "percussion",
+      "bar": 1,
+      "beat": 1.0,
+      "duration_beats": 0.17708333333333334,
+      "pitch": 36,
+      "velocity": 104
+    },
+    {
+      "role": "piano",
+      "bar": 1,
+      "beat": 1.0458333333333334,
+      "duration_beats": 0.24791666666666667,
+      "pitch": 50,
+      "velocity": 53
+    },
+    {
+      "role": "piano",
+      "bar": 1,
+      "beat": 1.0354166666666667,
+      "duration_beats": 0.36875,
+      "pitch": 52,
+      "velocity": 53
+    },
+    {
+      "role": "piano",
+      "bar": 1,
+      "beat": 1.0104166666666667,
+      "duration_beats": 0.4083333333333333,
+      "pitch": 46,
+      "velocity": 53
+    },
+    {
+      "role": "piano",
+      "bar": 1,
+      "beat": 1.0416666666666667,
+      "duration_beats": 0.4041666666666667,
+      "pitch": 67,
+      "velocity": 53
+    },
+    {
+      "role": "lead",
+      "bar": 1,
+      "beat": 1.3583333333333334,
+      "duration_beats": 0.25,
+      "pitch": 86,
+      "velocity": 78
+    },
+    {
+      "role": "piano",
+      "bar": 1,
+      "beat": 1.53125,
+      "duration_beats": 0.1625,
+      "pitch": 67,
+      "velocity": 49
+    },
+    {
+      "role": "piano",
+      "bar": 1,
+      "beat": 1.5041666666666667,
+      "duration_beats": 0.2916666666666667,
+      "pitch": 52,
+      "velocity": 49
+    },
+    {
+      "role": "piano",
+      "bar": 1,
+      "beat": 1.5104166666666665,
+      "duration_beats": 0.2875,
+      "pitch": 46,
+      "velocity": 49
+    },
+    {
+      "role": "lead",
+      "bar": 1,
+      "beat": 1.75,
+      "duration_beats": 0.13333333333333333,
+      "pitch": 89,
+      "velocity": 78
+    },
+    {
+      "role": "piano",
+      "bar": 1,
+      "beat": 1.525,
+      "duration_beats": 0.37083333333333335,
+      "pitch": 74,
+      "velocity": 49
+    },
+    {
+      "role": "bass",
+      "bar": 1,
+      "beat": 1.0,
+      "duration_beats": 0.9083333333333333,
+      "pitch": 28,
+      "velocity": 79
+    },
+    {
+      "role": "percussion",
+      "bar": 1,
+      "beat": 2.0,
+      "duration_beats": 0.1625,
+      "pitch": 42,
+      "velocity": 97
+    },
+    {
+      "role": "lead",
+      "bar": 1,
+      "beat": 2.0979166666666664,
+      "duration_beats": 0.2520833333333333,
+      "pitch": 93,
+      "velocity": 78
+    },
+    {
+      "role": "piano",
+      "bar": 1,
+      "beat": 2.252083333333333,
+      "duration_beats": 0.17916666666666667,
+      "pitch": 58,
+      "velocity": 49
+    },
+    {
+      "role": "piano",
+      "bar": 1,
+      "beat": 2.260416666666667,
+      "duration_beats": 0.32916666666666666,
+      "pitch": 50,
+      "velocity": 49
+    },
+    {
+      "role": "percussion",
+      "bar": 1,
+      "beat": 2.5,
+      "duration_beats": 0.11875,
+      "pitch": 38,
+      "velocity": 71
+    },
+    {
+      "role": "piano",
+      "bar": 1,
+      "beat": 2.2854166666666664,
+      "duration_beats": 0.3541666666666667,
+      "pitch": 40,
+      "velocity": 49
+    },
+    {
+      "role": "piano",
+      "bar": 1,
+      "beat": 2.2625,
+      "duration_beats": 0.45625,
+      "pitch": 55,
+      "velocity": 49
+    },
+    {
+      "role": "bass",
+      "bar": 1,
+      "beat": 2.0,
+      "duration_beats": 0.8166666666666667,
+      "pitch": 35,
+      "velocity": 79
+    },
+    {
+      "role": "percussion",
+      "bar": 1,
+      "beat": 3.0,
+      "duration_beats": 0.175,
+      "pitch": 36,
+      "velocity": 98
+    },
+    {
+      "role": "piano",
+      "bar": 1,
+      "beat": 3.29375,
+      "duration_beats": 0.19791666666666666,
+      "pitch": 43,
+      "velocity": 49
+    },
+    {
+      "role": "piano",
+      "bar": 1,
+      "beat": 3.3041666666666667,
+      "duration_beats": 0.36875,
+      "pitch": 52,
+      "velocity": 49
+    },
+    {
+      "role": "piano",
+      "bar": 1,
+      "beat": 3.308333333333333,
+      "duration_beats": 0.5,
+      "pitch": 70,
+      "velocity": 49
+    },
+    {
+      "role": "piano",
+      "bar": 1,
+      "beat": 3.2916666666666665,
+      "duration_beats": 0.525,
+      "pitch": 62,
+      "velocity": 49
+    },
+    {
+      "role": "bass",
+      "bar": 1,
+      "beat": 3.0,
+      "duration_beats": 0.88125,
+      "pitch": 37,
+      "velocity": 79
+    },
+    {
+      "role": "percussion",
+      "bar": 1,
+      "beat": 4.0,
+      "duration_beats": 0.18541666666666667,
+      "pitch": 42,
+      "velocity": 99
+    },
+    {
+      "role": "piano",
+      "bar": 1,
+      "beat": 4.25625,
+      "duration_beats": 0.24583333333333332,
+      "pitch": 70,
+      "velocity": 49
+    },
+    {
+      "role": "piano",
+      "bar": 1,
+      "beat": 4.2625,
+      "duration_beats": 0.3333333333333333,
+      "pitch": 62,
+      "velocity": 49
+    },
+    {
+      "role": "piano",
+      "bar": 1,
+      "beat": 4.277083333333334,
+      "duration_beats": 0.3854166666666667,
+      "pitch": 55,
+      "velocity": 49
+    },
+    {
+      "role": "piano",
+      "bar": 1,
+      "beat": 4.279166666666667,
+      "duration_beats": 0.475,
+      "pitch": 40,
+      "velocity": 49
+    },
+    {
+      "role": "bass",
+      "bar": 1,
+      "beat": 4.0,
+      "duration_beats": 0.8208333333333333,
+      "pitch": 38,
+      "velocity": 79
+    },
+    {
+      "role": "texture",
+      "bar": 1,
+      "beat": 1.0,
+      "duration_beats": 7.6,
+      "pitch": 77,
+      "velocity": 31
+    },
+    {
+      "role": "texture",
+      "bar": 1,
+      "beat": 1.0,
+      "duration_beats": 7.6,
+      "pitch": 82,
+      "velocity": 31
+    }
+  ],
+  "seed": 10997,
+  "live_control": {
+    "prompt": "138 bpm, goblin mode dungeon rave, crooked minor harmony, twitchy creature percussion, distorted low-end lunges, mischievous synth shrieks, feral but playable.",
+    "psychosis_level": 0.82,
+    "updated_at": "2026-04-29T23:29:04Z",
+    "applies_to": "next generated section",
+    "delivery_status": "control_server_received; segment_conductor_will_apply_at_next_boundary",
+    "next_section_eta_seconds": null,
+    "next_effect": "audible in about 20 buffered section(s)",
+    "tempo_bpm": 138,
+    "key": "D minor",
+    "active_preset": "goblin"
+  },
+  "render_engine": "internal_synth+effects",
+  "active_preset": "goblin",
+  "generation_params": null
+}

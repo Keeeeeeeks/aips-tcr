@@ -1,0 +1,29 @@
+{
+  "id": "qa-single",
+  "created_at": "2026-04-27T05:48:38Z",
+  "updated_at": "2026-04-27T05:48:54Z",
+  "title": "Current stream session qa-single",
+  "chunk_seconds": 5,
+  "duration_seconds": 15.0,
+  "recording": "/public/sessions/qa-single/current-stream.mp3",
+  "chunks": [
+    {
+      "id": "20260427T014848",
+      "created_at": "20260427T014848",
+      "recording": "/public/sessions/qa-single/chunk_20260427T014848.mp3",
+      "title": "Current stream chunk 20260427T014848"
+    },
+    {
+      "id": "20260427T014843",
+      "created_at": "20260427T014843",
+      "recording": "/public/sessions/qa-single/chunk_20260427T014843.mp3",
+      "title": "Current stream chunk 20260427T014843"
+    },
+    {
+      "id": "20260427T014838",
+      "created_at": "20260427T014838",
+      "recording": "/public/sessions/qa-single/chunk_20260427T014838.mp3",
+      "title": "Current stream chunk 20260427T014838"
+    }
+  ]
+}

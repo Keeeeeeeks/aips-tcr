@@ -1,0 +1,23 @@
+{
+  "id": "render-qa",
+  "created_at": "2026-04-27T21:47:13Z",
+  "updated_at": "2026-04-27T21:47:18Z",
+  "title": "Current stream session render-qa",
+  "chunk_seconds": 5,
+  "duration_seconds": 10.434782608695652,
+  "recording": "/public/sessions/render-qa/current-stream.mp3",
+  "chunks": [
+    {
+      "id": "section_00001",
+      "created_at": "2026-04-27T21:47:18Z",
+      "recording": "/public/stream/section_00001.mp3",
+      "title": "Section 1 \u00b7 make the next bar 150 bpm and sound like sewerslut"
+    },
+    {
+      "id": "section_00000",
+      "created_at": "2026-04-27T21:47:13Z",
+      "recording": "/public/stream/section_00000.mp3",
+      "title": "Section 0 \u00b7 make the next bar 150 bpm and sound like sewerslut"
+    }
+  ]
+}

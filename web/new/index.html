@@ -1,0 +1,1259 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI Ensemble · Liquid Glass</title>
+  <link rel="stylesheet" href="https://unpkg.com/7.css@0.21.1/dist/7.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2306070b'/%3E%3Ccircle cx='32' cy='32' r='18' fill='%235eead4'/%3E%3Cpath d='M24 38V22l18 8-18 8z' fill='%23042f2e'/%3E%3C/svg%3E" />
+
+  <style>
+    /* ============================================================
+       AI ENSEMBLE — LIQUID GLASS / Y2K AERO (wired build)
+       Visual base: web/paper/liquid-glass.html
+       Wiring:
+         GET  /api/llm-status         → llm orb + meta + measured latency
+         GET  /api/sysinfo            → CPU/RAM/NET right rail (every 2s)
+         GET  /public/conductor-status.json (every 2s) → live-ready, sync%, prompt eta
+         GET  /public/live-control.json   (initial)    → prompt + drift
+         GET  /public/stream/state.json (every 5s)     → BPM, KEY, role status
+         GET  /public/stream/role-bundles.json (every 5s) → derive role params
+         GET  /public/current-session.json (every 10s)
+         GET  /public/personas.json    (initial)
+         GET  /public/archive/index.json (initial)
+         POST /api/live-control        → on Apply
+         POST /api/personas            → on Save
+         <audio> + Web Audio API       → spectrum + L/R meters
+       ============================================================ */
+    :root {
+      color-scheme: dark;
+      --w7-w-bg: #1a2433;
+      --w7-w-grad:
+        linear-gradient(to right, rgba(255,255,255,0.18), rgba(0,0,0,0.20), rgba(255,255,255,0.10)),
+        linear-gradient(180deg, #2a3a52 0%, #0e1622 100%);
+      --w7-surface: rgba(8, 12, 22, 0.62);
+      --w7-w-bd: rgba(120, 170, 200, 0.35);
+      --w7-w-bdr: 14px;
+      --w7-font: Fixedsys, Terminal, "Lucida Console", "Courier New", Monaco, monospace;
+      --teal-0: #ccfbf1; --teal-1: #5eead4; --teal-2: #14b8a6; --teal-3: #0d9488;
+      --violet-1: #c4b5fd; --violet-2: #a78bfa; --violet-3: #7c3aed;
+      --silver-0: #f1f5f9; --silver-1: #cbd5e1; --silver-2: #94a3b8;
+      --silver-3: #64748b;
+      --green-1: #22c55e; --amber-1: #f59e0b; --red-1: #ef4444;
+      --mono: Fixedsys, Terminal, "Lucida Console", "Courier New", Monaco, monospace;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: var(--w7-font); color: var(--silver-1); min-height: 100vh;
+      font-smooth: never; -webkit-font-smoothing: none; text-rendering: geometricPrecision;
+      background:
+        radial-gradient(ellipse 60% 50% at 12% 22%, rgba(124, 58, 237, 0.24), transparent 65%),
+        radial-gradient(ellipse 70% 55% at 88% 78%, rgba(20, 184, 166, 0.18), transparent 65%),
+        radial-gradient(ellipse 80% 40% at 50% 110%, rgba(8, 145, 178, 0.20), transparent 65%),
+        linear-gradient(180deg, #06070b 0%, #02030a 100%);
+      background-attachment: fixed;
+    }
+    body::before {
+      content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background-image:
+        linear-gradient(to right, rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+      background-size: 56px 56px;
+      mask-image: radial-gradient(circle at 50% 40%, rgba(0,0,0,0.7), transparent 70%);
+    }
+
+    .desk {
+      position: relative; z-index: 1;
+      display: grid; grid-template-columns: 118px 1fr 118px;
+      gap: 16px; max-width: 1400px; margin: 0 auto;
+      padding: 22px 22px 56px; min-height: 100vh;
+    }
+
+    /* Left rail */
+    .rail-left, .rail-right { display: flex; flex-direction: column; gap: 14px; padding-top: 38px; }
+    .icon-btn {
+      width: 100%; min-height: 86px; border-radius: 22px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+      background:
+        radial-gradient(circle at 32% 28%, rgba(255,255,255,0.18), transparent 50%),
+        linear-gradient(180deg, #1d2738 0%, #060a14 100%);
+      border: 1px solid rgba(180, 210, 230, 0.20);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.18),
+        inset 0 -1px 0 rgba(0,0,0,0.6),
+        0 8px 22px rgba(0,0,0,0.55);
+      color: var(--teal-1); cursor: pointer;
+      padding: 12px 8px;
+    }
+    .icon-btn .icon {
+      font-size: 20px; line-height: 1;
+      filter: drop-shadow(0 0 8px rgba(94,234,212,0.45));
+    }
+    .icon-btn .label {
+      font: 700 10px/1.1 var(--mono);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--silver-1);
+      text-align: center;
+    }
+    .icon-btn:focus-visible { outline: 2px solid var(--teal-1); outline-offset: 2px; }
+    .icon-btn[aria-current="true"] {
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.24),
+        inset 0 -1px 0 rgba(0,0,0,0.6),
+        0 8px 22px rgba(0,0,0,0.55),
+        0 0 0 2px rgba(94,234,212,0.25),
+        0 0 22px rgba(94,234,212,0.35);
+    }
+    .system-online {
+      margin-top: auto; display: grid; place-items: center; gap: 6px;
+      padding-bottom: 12px; font: 600 9px/1.2 var(--mono);
+      letter-spacing: 0.18em; color: var(--silver-2);
+      text-align: center; text-transform: uppercase;
+    }
+    .system-orb {
+      width: 36px; height: 36px; border-radius: 50%;
+      background:
+        radial-gradient(circle at 32% 28%, rgba(255,255,255,0.85), transparent 38%),
+        radial-gradient(circle at 50% 60%, #22c55e, #064e3b 80%);
+      box-shadow:
+        0 0 22px rgba(34,197,94,0.65),
+        inset 0 -3px 6px rgba(0,0,0,0.6),
+        inset 0 1px 1px rgba(255,255,255,0.25);
+      transition: filter 250ms ease;
+    }
+    .system-orb.offline {
+      background:
+        radial-gradient(circle at 32% 28%, rgba(255,255,255,0.7), transparent 38%),
+        radial-gradient(circle at 50% 60%, #ef4444, #4b1212 80%);
+      box-shadow:
+        0 0 22px rgba(239,68,68,0.55),
+        inset 0 -3px 6px rgba(0,0,0,0.6),
+        inset 0 1px 1px rgba(255,255,255,0.25);
+    }
+
+    .stat-card {
+      border-radius: 14px; padding: 12px 10px 10px;
+      min-width: 0; overflow: hidden;
+      background: linear-gradient(180deg, rgba(40,52,72,0.55), rgba(8,10,18,0.78));
+      border: 1px solid rgba(180, 210, 230, 0.14);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.10),
+        inset 0 -1px 0 rgba(0,0,0,0.6),
+        0 6px 18px rgba(0,0,0,0.45);
+      font-family: var(--mono);
+    }
+    .stat-card .key { font-size: 9px; letter-spacing: 0.14em; color: var(--silver-3); text-transform: uppercase; }
+    .stat-card .val {
+      font-size: clamp(13px, 1.25vw, 16px); color: var(--teal-1); margin: 2px 0 6px;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap; overflow: hidden; text-overflow: clip;
+      letter-spacing: -0.02em;
+    }
+    .stat-bars { display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; height: 14px; align-items: end; }
+    .stat-bars span {
+      background: linear-gradient(180deg, #5eead4, #0d9488);
+      border-radius: 1px; box-shadow: 0 0 4px rgba(94,234,212,0.4);
+      min-height: 2px;
+    }
+    .sys-time-card {
+      border-radius: 14px; padding: 12px 10px;
+      min-width: 0; overflow: hidden;
+      background: linear-gradient(180deg, rgba(40,52,72,0.55), rgba(8,10,18,0.82));
+      border: 1px solid rgba(180, 210, 230, 0.18);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.10), 0 6px 18px rgba(0,0,0,0.45);
+      font-family: var(--mono); text-align: right;
+    }
+    .sys-time-card .key { font-size: 9px; letter-spacing: 0.12em; color: var(--silver-3); }
+    .sys-time-card .clock {
+      font-size: clamp(16px, 1.55vw, 20px);
+      line-height: 1.05; color: var(--teal-1); font-variant-numeric: tabular-nums;
+      letter-spacing: -0.04em; white-space: nowrap;
+    }
+    .sys-time-card .date { font-size: 10px; line-height: 1.15; color: var(--silver-2); letter-spacing: 0.08em; }
+
+    .stage { display: grid; gap: 14px; min-width: 0; }
+
+    /* Hero / wordmark */
+    .hero { position: relative; height: 156px; display: grid; place-items: center; }
+    .blob-field { position: absolute; inset: 0; pointer-events: none; filter: url(#goo); }
+    .blob {
+      position: absolute; border-radius: 50%;
+      background:
+        radial-gradient(circle at 32% 28%, rgba(255,255,255,0.95) 0%, rgba(220,232,242,0.65) 22%, transparent 60%),
+        radial-gradient(circle at 60% 75%, #1a2030 0%, #0a0e18 70%),
+        linear-gradient(180deg, #d8e6f0 0%, #6a8aa0 35%, #1a2838 70%, #0a1018 100%);
+      box-shadow: 0 4px 18px rgba(0,0,0,0.5);
+    }
+    .blob.l1 { width: 130px; height: 110px; left: 4%;  top: 12px; transform: rotate(-12deg); }
+    .blob.l2 { width: 64px;  height: 56px;  left: 14%; top: 78px; }
+    .blob.l3 { width: 36px;  height: 32px;  left: 23%; top: 54px; }
+    .blob.r1 { width: 130px; height: 100px; right: 4%; top: 18px; transform: rotate(10deg); }
+    .blob.r2 { width: 70px;  height: 60px;  right: 14%; top: 76px; }
+    .blob.r3 { width: 28px;  height: 26px;  right: 24%; top: 44px; }
+
+    .wordmark {
+      position: relative;
+      font-family: Fixedsys, Terminal, "Lucida Console", "Courier New", Monaco, monospace;
+      font-style: normal; font-weight: 900;
+      font-size: clamp(2.6rem, 6vw, 4.8rem);
+      letter-spacing: 0.02em; line-height: 0.95; margin: 0;
+      text-transform: uppercase;
+      background:
+        linear-gradient(180deg,
+          #f8fafc 0%, #cdd9e3 14%, #4a5e72 28%, #b8c8d6 44%,
+          #6b8294 58%, #d8e4ee 72%, #2a3a4a 86%, #f0f4f8 100%);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter:
+        drop-shadow(0  1px 0 rgba(255,255,255,0.45))
+        drop-shadow(0 -1px 0 rgba(0,0,0,0.65))
+        drop-shadow(0  10px 26px rgba(94,234,212,0.20))
+        drop-shadow(0  0  34px rgba(167,139,250,0.18));
+      text-align: center;
+    }
+    .wordmark::after {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(180deg, transparent 38%, rgba(255,255,255,0.16) 50%, transparent 62%);
+      mix-blend-mode: screen; pointer-events: none;
+    }
+    .tagline {
+      position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+      margin: 0; color: var(--teal-1); font-style: italic;
+      font-size: 0.85rem; letter-spacing: 0.16em; text-transform: lowercase;
+      filter: drop-shadow(0 0 12px rgba(94,234,212,0.5));
+    }
+
+    /* Panels (7.css window override) */
+    .panel.window {
+      background: linear-gradient(180deg, rgba(48,62,84,0.55), rgba(8,12,22,0.85));
+      border: 1px solid rgba(170, 200, 220, 0.18);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.10),
+        inset 0 -1px 0 rgba(0,0,0,0.65),
+        0 18px 48px rgba(0,0,0,0.55);
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      overflow: hidden; border-radius: 14px;
+    }
+    .panel.window::before { display: none; }
+    .panel .title-bar {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.10), rgba(0,0,0,0.0) 30%),
+        linear-gradient(180deg, #2a3a52 0%, #0e1622 100%);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding: 6px 10px; border-radius: 13px 13px 0 0;
+    }
+    .panel .title-bar-text {
+      color: var(--silver-0); font-weight: 700; letter-spacing: 0.04em;
+      text-shadow: 0 1px 0 rgba(0,0,0,0.6);
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .panel.has-caret .title-bar-text::before {
+      content: "▸"; color: var(--teal-1); font-size: 11px; opacity: 0.8;
+    }
+    .panel .window-body {
+      background: transparent !important; color: var(--silver-1);
+      padding: 16px 18px 18px; margin: 0;
+    }
+
+    /* LLM connection */
+    .llm-row { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; }
+    .orb {
+      width: 22px; height: 22px; border-radius: 50%;
+      background:
+        radial-gradient(circle at 32% 28%, rgba(255,255,255,0.85), transparent 40%),
+        radial-gradient(circle at 50% 60%, #ef4444, #4b1212 80%);
+      box-shadow: 0 0 18px rgba(239,68,68,0.6),
+                  inset 0 -2px 4px rgba(0,0,0,0.6),
+                  inset 0 1px 1px rgba(255,255,255,0.3);
+      transition: background 250ms ease, box-shadow 250ms ease;
+    }
+    .orb.connected {
+      background:
+        radial-gradient(circle at 32% 28%, rgba(255,255,255,0.95), transparent 40%),
+        radial-gradient(circle at 50% 60%, #22c55e, #064e3b 80%);
+      box-shadow: 0 0 20px rgba(34,197,94,0.7),
+                  inset 0 -2px 4px rgba(0,0,0,0.6),
+                  inset 0 1px 1px rgba(255,255,255,0.3);
+    }
+    .conn-line { font-size: 0.95rem; color: var(--silver-1); display: inline-flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .conn-line .verb.ok { color: var(--green-1); font-weight: 700; }
+    .conn-line .verb.bad { color: #fca5a5; font-weight: 700; }
+    .latency { color: var(--silver-2); font-family: var(--mono); font-size: 0.88rem; }
+    .meta-row { margin-top: 14px; display: grid; grid-template-columns: repeat(3, 1fr) auto; gap: 10px; align-items: center; }
+    .meta-pill {
+      border: 1px solid rgba(120, 170, 200, 0.22);
+      background: rgba(0,0,0,0.36); border-radius: 10px;
+      padding: 7px 12px; font-family: var(--mono);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .meta-pill .key { font-size: 9px; letter-spacing: 0.18em; color: var(--silver-3); text-transform: uppercase; }
+    .meta-pill .val { font-size: 12px; color: var(--teal-1); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sync-bars { display: inline-grid; grid-template-columns: repeat(8, 3px); gap: 2px; height: 18px; align-items: end; margin-left: 4px; }
+    .sync-bars i {
+      background: linear-gradient(180deg, #5eead4, #0d9488);
+      border-radius: 1px; box-shadow: 0 0 4px rgba(94,234,212,0.4);
+      min-height: 2px;
+    }
+
+    /* iTunes mini player — current mode display */
+    .itunes-player {
+      background:
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0px, transparent 1px, transparent 2px),
+        linear-gradient(180deg, #3a4455 0%, #1e2838 40%, #141c28 100%);
+      border: 1px solid rgba(120,170,200,0.3);
+      border-radius: 10px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 6px 24px rgba(0,0,0,0.6);
+      padding: 14px;
+      display: grid; grid-template-columns: 80px 1fr; gap: 14px; align-items: center;
+      margin-bottom: 16px;
+    }
+    .itunes-player .art {
+      width: 80px; height: 80px; border-radius: 6px;
+      background:
+        radial-gradient(circle at 30% 25%, rgba(255,255,255,0.15), transparent 50%),
+        linear-gradient(135deg, #2a1a3a 0%, #0d1a2f 50%, #1a3040 100%);
+      border: 2px solid rgba(120,170,200,0.25);
+      box-shadow: inset 0 0 12px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.4);
+      display: grid; place-items: center;
+      font-size: 24px; color: rgba(94,234,212,0.6);
+      position: relative; overflow: hidden;
+    }
+    .itunes-player .art::after {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 50%);
+      border-radius: 4px;
+    }
+    .itunes-player .meta { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+    .itunes-player .mode-name {
+      font-size: 18px; font-weight: 800; color: var(--silver-0);
+      letter-spacing: 0.06em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .itunes-player .mode-desc {
+      font-size: 12px; color: var(--silver-3); line-height: 1.4;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .itunes-player .mode-stats {
+      display: flex; gap: 10px; font-size: 11px; color: var(--teal-1); letter-spacing: 0.12em; text-transform: uppercase;
+    }
+    .itunes-player .marquee-bar {
+      grid-column: 1 / -1; height: 22px; margin-top: 4px;
+      background: rgba(0,0,0,0.4); border-radius: 3px;
+      border: 1px solid rgba(120,170,200,0.12);
+      overflow: hidden; display: flex; align-items: center; padding: 0 8px;
+    }
+    .itunes-player .marquee-text {
+      font-size: 11px; color: var(--teal-1); white-space: nowrap; letter-spacing: 0.08em;
+      animation: itunes-marquee 14s linear infinite;
+    }
+    @keyframes itunes-marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-200%); } }
+    /* Buttons */
+    .btn {
+      position: relative; appearance: none; cursor: pointer; border: 0;
+      font: inherit; font-weight: 800; font-size: 0.9rem;
+      padding: 12px 22px; border-radius: 999px; min-height: 44px;
+      display: inline-flex; align-items: center; gap: 10px;
+      overflow: hidden;
+      transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible { outline: 2px solid var(--teal-1); outline-offset: 3px; }
+    .btn[disabled] { cursor: progress; filter: saturate(0.55) brightness(0.85); }
+
+    .btn-primary {
+      color: #052e2a;
+      background: linear-gradient(180deg, #99f6e4 0%, #2dd4bf 35%, #0d9488 100%);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.7),
+        inset 0 -3px 6px rgba(0,0,0,0.30),
+        0 8px 24px rgba(20,184,166,0.45),
+        0 0 22px rgba(94,234,212,0.35);
+    }
+    .btn-primary::before {
+      content: ""; position: absolute;
+      top: 3px; left: 14%; right: 14%; height: 42%;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,255,255,0.0));
+      filter: blur(0.5px); pointer-events: none;
+    }
+    .btn-primary::after {
+      content: ""; position: absolute;
+      top: 5px; left: 22%; width: 22px; height: 8px;
+      border-radius: 999px; background: rgba(255,255,255,0.92);
+      filter: blur(2px); pointer-events: none;
+    }
+
+    .btn-secondary {
+      color: var(--teal-0);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0) 38%),
+        linear-gradient(180deg, rgba(45,64,80,0.65), rgba(8,16,26,0.92));
+      border: 1px solid rgba(94,234,212,0.34);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.18),
+        inset 0 -1px 0 rgba(0,0,0,0.6),
+        0 6px 18px rgba(0,0,0,0.4);
+    }
+
+    /* Forms */
+    .form-label { font-size: 0.78rem; color: var(--silver-2); margin: 0 0 6px; }
+    .prompt-box {
+      width: 100%;
+      background: linear-gradient(180deg, rgba(0,0,0,0.55), rgba(2,6,14,0.78));
+      border: 1px solid rgba(94,234,212,0.22);
+      border-radius: 12px; padding: 14px 16px;
+      color: var(--teal-0); font-family: var(--mono);
+      font-size: 1rem; line-height: 1.5;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -1px 0 rgba(0,0,0,0.6);
+      min-height: 56px; resize: vertical;
+    }
+    .prompt-box:focus { outline: none; border-color: rgba(94,234,212,0.55); box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -1px 0 rgba(0,0,0,0.6), 0 0 0 3px rgba(94,234,212,0.18); }
+    .drift-row { display: grid; grid-template-columns: 130px 1fr 60px; gap: 16px; align-items: center; margin-top: 16px; }
+    .drift-row .form-label { margin: 0; }
+    .slider {
+      -webkit-appearance: none; appearance: none;
+      width: 100%; height: 8px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.5), rgba(0,0,0,0.85));
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 999px;
+      box-shadow: inset 0 1px 1px rgba(0,0,0,0.6);
+    }
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 24px; height: 24px; border-radius: 50%;
+      background:
+        radial-gradient(circle at 32% 30%, rgba(255,255,255,0.95), transparent 40%),
+        linear-gradient(180deg, #99f6e4, #0d9488);
+      border: 1px solid rgba(255,255,255,0.45);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.5), 0 0 14px rgba(94,234,212,0.55);
+      cursor: pointer;
+    }
+    .slider::-moz-range-thumb {
+      width: 24px; height: 24px; border-radius: 50%;
+      background:
+        radial-gradient(circle at 32% 30%, rgba(255,255,255,0.95), transparent 40%),
+        linear-gradient(180deg, #99f6e4, #0d9488);
+      border: 1px solid rgba(255,255,255,0.45);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.5), 0 0 14px rgba(94,234,212,0.55);
+      cursor: pointer;
+    }
+    .drift-readout { font-family: var(--mono); color: var(--teal-1); font-size: 1rem; text-align: right; font-variant-numeric: tabular-nums; }
+    .form-actions { display: flex; gap: 14px; margin-top: 18px; align-items: center; flex-wrap: wrap; }
+    .save-status { font-family: var(--mono); font-size: 0.85rem; color: var(--silver-2); }
+    .save-status.error { color: #fca5a5; }
+    .save-status.ok { color: var(--green-1); }
+
+    /* Live audio */
+    .audio-status { display: flex; align-items: center; gap: 14px; font-family: var(--mono); font-size: 0.82rem; color: var(--silver-2); margin-bottom: 12px; flex-wrap: wrap; }
+    .audio-status .green-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #c6ffd9, #16a34a 80%);
+      box-shadow: 0 0 8px rgba(34,197,94,0.7);
+    }
+    .audio-status .green-dot.bad {
+      background: radial-gradient(circle at 35% 30%, #fecaca, #b91c1c 80%);
+      box-shadow: 0 0 8px rgba(239,68,68,0.6);
+    }
+    .audio-status .timer { color: var(--teal-1); margin-left: auto; font-size: 0.95rem; }
+    .audio-status .live-pill {
+      padding: 2px 10px; border-radius: 6px;
+      background: linear-gradient(180deg, #f87171, #b91c1c);
+      color: #fff; font-weight: 800; letter-spacing: 0.18em; font-size: 11px;
+      box-shadow: 0 0 12px rgba(239,68,68,0.5), inset 0 1px 0 rgba(255,255,255,0.3);
+    }
+    .audio-status .live-pill.idle {
+      background: linear-gradient(180deg, #6b7280, #1f2937);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
+    }
+    .audio-status .audio-meta { display: inline-flex; gap: 8px; }
+    .audio-meta .pill {
+      padding: 3px 10px; border-radius: 999px;
+      background: rgba(0,0,0,0.4); border: 1px solid rgba(94,234,212,0.22);
+      color: var(--teal-1);
+    }
+    .audio-meta .pill .key { color: var(--silver-3); margin-right: 4px; letter-spacing: 0.16em; }
+
+    .audio-deck {
+      display: grid; grid-template-columns: 110px 1fr 80px;
+      gap: 18px; align-items: stretch;
+      padding: 14px 16px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.7), rgba(0,0,0,0.88));
+      border: 1px solid rgba(94,234,212,0.16);
+      border-radius: 14px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(0,0,0,0.7);
+    }
+    .master { display: grid; place-items: center; gap: 8px; font-family: var(--mono); text-align: center; }
+    .master .lbl { font-size: 9px; letter-spacing: 0.18em; color: var(--silver-3); text-transform: uppercase; }
+    .knob {
+      width: 64px; height: 64px; border-radius: 50%; position: relative;
+      background:
+        radial-gradient(circle at 35% 28%, rgba(255,255,255,0.95) 0%, transparent 38%),
+        radial-gradient(circle at 50% 50%,
+          #d4dde6 0%, #8aa0b3 22%, #3a4e62 55%, #1a2530 75%, #0a141c 100%);
+      box-shadow:
+        inset 2px 2px 5px rgba(255,255,255,0.30),
+        inset -3px -3px 6px rgba(0,0,0,0.7),
+        0 0 0 3px #0e1a26,
+        0 0 0 4px rgba(120,170,200,0.20),
+        0 8px 20px rgba(0,0,0,0.65);
+      cursor: ns-resize;
+      touch-action: none;
+    }
+    .knob:focus-visible { outline: 2px solid var(--teal-1); outline-offset: 2px; }
+    .knob::after {
+      content: ""; position: absolute;
+      top: 7px; left: calc(50% - 1.5px);
+      transform: rotate(var(--rot, 0deg));
+      transform-origin: 50% 25px;
+      width: 3px; height: 16px; border-radius: 2px;
+      background: linear-gradient(180deg, #fff, rgba(200,220,240,0.6));
+      box-shadow: 0 0 5px rgba(150,220,255,0.85);
+    }
+    .master .level { font-size: 11px; letter-spacing: 0.14em; color: var(--silver-2); }
+    .master .level b { color: var(--teal-1); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+    .spectrum-wrap { position: relative; display: grid; grid-template-rows: 1fr 16px; gap: 4px; }
+    .spectrum-canvas {
+      width: 100%; height: 100px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.02), transparent 30%),
+        linear-gradient(180deg, rgba(0,0,0,0.4), rgba(0,0,0,0.6));
+      border-radius: 6px;
+      border: 1px solid rgba(94,234,212,0.10);
+      display: block;
+    }
+    .freq-scale { display: flex; justify-content: space-between; font: 9px var(--mono); color: var(--silver-3); letter-spacing: 0.10em; }
+
+    .meters { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; align-items: end; position: relative; }
+    .meter {
+      width: 14px; height: 100px; border-radius: 3px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.85), rgba(0,0,0,0.95));
+      border: 1px solid rgba(120,140,170,0.25);
+      position: relative; justify-self: center; overflow: hidden;
+    }
+    .meter::before {
+      content: ""; position: absolute; left: 1px; right: 1px; bottom: 1px; height: var(--lvl, 0%);
+      background: linear-gradient(to top, #16a34a 0%, #5eead4 45%, #a78bfa 70%, #f59e0b 88%, #ef4444 100%);
+      box-shadow: 0 0 8px rgba(94,234,212,0.6);
+      border-radius: 2px;
+      transition: height 60ms linear;
+    }
+    .meter.l { --lvl: 0%; }
+    .meter.r { --lvl: 0%; }
+    .meter-labels { grid-column: 1 / -1; display: flex; justify-content: space-between; font: 9px var(--mono); color: var(--silver-3); padding: 0 2px; margin-top: 2px; }
+    .meter-scale {
+      position: absolute; top: -4px; right: -36px; height: 100px;
+      display: flex; flex-direction: column; justify-content: space-between;
+      font: 9px var(--mono); color: var(--silver-3); letter-spacing: 0.04em;
+    }
+
+    .transport { display: flex; align-items: center; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+    .tbtn {
+      width: 44px; height: 44px; border-radius: 12px;
+      display: grid; place-items: center;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.18), transparent 35%),
+        linear-gradient(180deg, #1d2738 0%, #060a14 100%);
+      border: 1px solid rgba(180, 210, 230, 0.18);
+      color: var(--silver-1);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.18),
+        inset 0 -1px 0 rgba(0,0,0,0.6),
+        0 6px 14px rgba(0,0,0,0.5);
+      cursor: pointer; font-size: 14px;
+    }
+    .tbtn:focus-visible { outline: 2px solid var(--teal-1); outline-offset: 2px; }
+    .tbtn[disabled] { opacity: 0.5; cursor: not-allowed; }
+    .tbtn.play {
+      width: 86px;
+      background: linear-gradient(180deg, #99f6e4, #14b8a6 60%, #0d9488 100%);
+      color: #052e2a;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.7),
+        inset 0 -3px 5px rgba(0,0,0,0.30),
+        0 6px 18px rgba(20,184,166,0.5);
+    }
+    .transport .spacer { flex: 1; }
+    .sync-btn {
+      padding: 8px 14px; border-radius: 999px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(0,0,0,0)),
+                  linear-gradient(180deg, #1d2738, #060a14);
+      border: 1px solid rgba(94,234,212,0.30);
+      color: var(--teal-1);
+      font: 600 11px var(--mono); letter-spacing: 0.14em;
+      display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+    }
+    .sync-btn[aria-pressed="true"] { color: #062e2a; background: linear-gradient(180deg, #99f6e4, #14b8a6); border-color: rgba(255,255,255,0.4); }
+    .sync-btn .led-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #c6ffd9, #16a34a 80%);
+      box-shadow: 0 0 6px rgba(34,197,94,0.8);
+    }
+    .div-select, .tap-btn {
+      padding: 8px 12px; border-radius: 8px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(0,0,0,0.0)),
+                  linear-gradient(180deg, #1d2738, #060a14);
+      border: 1px solid rgba(180, 210, 230, 0.18);
+      color: var(--silver-1);
+      font: 600 11px var(--mono); letter-spacing: 0.06em;
+      cursor: pointer;
+    }
+    .tap-bpm { color: var(--teal-1); margin-left: 4px; font-variant-numeric: tabular-nums; }
+
+    /* Ensemble band */
+    .band { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+    .role-card.window {
+      background: linear-gradient(180deg, rgba(48,62,84,0.55), rgba(8,12,22,0.85));
+      border-radius: 14px; overflow: hidden;
+    }
+    .role-card .title-bar { padding: 6px 10px; }
+    .role-card .title-bar-text { font-size: 12px; }
+    .role-card .title-bar-text::before { content: ""; }
+    .role-head { display: flex; align-items: center; gap: 8px; }
+    .role-head .led { width: 11px; height: 11px; border-radius: 50%; }
+    .role-card .window-body { padding: 12px 14px 14px; }
+    .role-grid { display: grid; grid-template-columns: 1fr 44px; gap: 12px; align-items: end; }
+    .role-fields { display: grid; gap: 4px; }
+    .role-fields .key { font: 9px var(--mono); color: var(--silver-3); letter-spacing: 0.18em; text-transform: uppercase; }
+    .role-fields .status { font: 700 0.9rem var(--mono); color: var(--silver-0); }
+    .role-fields .param-key { font: 9px var(--mono); color: var(--silver-3); letter-spacing: 0.18em; text-transform: uppercase; margin-top: 6px; }
+    .role-fields .param-val { font: 700 0.9rem var(--mono); color: var(--silver-0); font-variant-numeric: tabular-nums; }
+    .role-bars { display: grid; grid-template-columns: repeat(8, 1fr); gap: 1.5px; height: 22px; align-items: end; margin-top: 4px; }
+    .role-bars span { border-radius: 1px; box-shadow: 0 0 3px currentColor; min-height: 2px; transition: height 250ms ease; }
+    .role-knob {
+      width: 44px; height: 44px; border-radius: 50%; position: relative;
+      background:
+        radial-gradient(circle at 35% 28%, rgba(255,255,255,0.85) 0%, transparent 38%),
+        radial-gradient(circle at 50% 50%,
+          #d4dde6 0%, #8aa0b3 22%, #3a4e62 55%, #1a2530 75%, #0a141c 100%);
+      box-shadow:
+        inset 2px 2px 4px rgba(255,255,255,0.25),
+        inset -2px -2px 4px rgba(0,0,0,0.7),
+        0 0 0 2px #0e1a26,
+        0 0 0 3px var(--ring, rgba(94,234,212,0.35)),
+        0 5px 12px rgba(0,0,0,0.55);
+    }
+    .role-knob::after {
+      content: ""; position: absolute;
+      top: 5px; left: 50%; transform: rotate(var(--rot, 0deg));
+      transform-origin: 50% 25px;
+      width: 2px; height: 12px; border-radius: 2px;
+      background: linear-gradient(180deg, #fff, rgba(200,220,240,0.5));
+      box-shadow: 0 0 4px rgba(150,220,255,0.8);
+      transition: transform 350ms ease;
+    }
+
+    .led-green   { background: radial-gradient(circle at 40% 30%, #c4ffd6, #16a34a); box-shadow: 0 0 6px #22c55e, 0 0 14px rgba(34,197,94,0.6); }
+    .led-teal    { background: radial-gradient(circle at 40% 30%, #ccfbf1, #14b8a6); box-shadow: 0 0 6px #5eead4, 0 0 14px rgba(94,234,212,0.6); }
+    .led-violet  { background: radial-gradient(circle at 40% 30%, #ddd6fe, #7c3aed); box-shadow: 0 0 6px #a78bfa, 0 0 14px rgba(167,139,250,0.6); }
+    .led-amber   { background: radial-gradient(circle at 40% 30%, #fde68a, #d97706); box-shadow: 0 0 6px #f59e0b, 0 0 14px rgba(245,158,11,0.6); }
+    .led-gray    { background: radial-gradient(circle at 40% 30%, #d1d5db, #4b5563); box-shadow: 0 0 4px rgba(148,163,184,0.4); }
+
+    .role-card.percussion { --ring: rgba(34,197,94,0.45);  }
+    .role-card.bass       { --ring: rgba(34,197,94,0.45);  }
+    .role-card.piano      { --ring: rgba(94,234,212,0.45); }
+    .role-card.lead       { --ring: rgba(167,139,250,0.45); }
+    .role-card.texture    { --ring: rgba(245,158,11,0.45); }
+
+    .role-card.percussion .role-bars span { background: linear-gradient(180deg, #5eead4, #14b8a6); color: #5eead4; }
+    .role-card.bass       .role-bars span { background: linear-gradient(180deg, #5eead4, #0d9488); color: #5eead4; }
+    .role-card.piano      .role-bars span { background: linear-gradient(180deg, #67e8f9, #0e7490); color: #67e8f9; }
+    .role-card.lead       .role-bars span { background: linear-gradient(180deg, #c4b5fd, #7c3aed); color: #a78bfa; }
+    .role-card.texture    .role-bars span { background: linear-gradient(180deg, #fde68a, #b45309); color: #f59e0b; }
+
+    /* Preset modes */
+    .preset-panel {
+      margin: 10px 0 16px; padding: 14px;
+      border-radius: 14px;
+      background: rgba(0,0,0,0.28);
+      border: 1px solid rgba(94,234,212,0.18);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+    .preset-head {
+      display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+      margin-bottom: 10px;
+    }
+    .preset-title {
+      font: 800 12px/1.2 var(--mono); letter-spacing: 0.16em;
+      color: var(--teal-1); text-transform: uppercase;
+    }
+    .preset-active {
+      font: 700 11px/1.2 var(--mono); color: var(--silver-2);
+      text-align: right;
+    }
+    .preset-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+      gap: 8px;
+    }
+    .preset-btn {
+      min-height: 44px; border-radius: 12px; padding: 8px 10px;
+      border: 1px solid rgba(180,210,230,0.18);
+      background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(0,0,0,0)), linear-gradient(180deg, #1d2738, #060a14);
+      color: var(--silver-1);
+      font: 800 11px/1.1 var(--mono);
+      letter-spacing: 0.08em; text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 6px 14px rgba(0,0,0,0.35);
+    }
+    .preset-btn[aria-pressed="true"] {
+      color: #052e2a;
+      background: linear-gradient(180deg, #99f6e4, #14b8a6 60%, #0d9488 100%);
+      border-color: rgba(255,255,255,0.42);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.55), 0 0 18px rgba(94,234,212,0.35);
+    }
+    .preset-desc {
+      margin: 10px 0 0; color: var(--silver-2); font-size: 0.84rem; line-height: 1.4;
+    }
+    .preset-role-toggles {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px;
+    }
+    .preset-toggle {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 9px; border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.18);
+      background: rgba(0,0,0,0.24);
+      font: 700 10px/1 var(--mono); color: var(--silver-1);
+      letter-spacing: 0.08em; text-transform: uppercase;
+    }
+    .preset-toggle input { accent-color: var(--teal-1); }
+
+    /* Collapsibles */
+    details.strip { width: 100%; }
+    details.strip > summary {
+      display: flex; align-items: center; gap: 12px; list-style: none; cursor: pointer;
+      padding: 12px 18px; border-radius: 14px;
+      background: linear-gradient(180deg, rgba(48,62,84,0.42), rgba(8,12,22,0.78));
+      border: 1px solid rgba(170, 200, 220, 0.16);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.08),
+        inset 0 -1px 0 rgba(0,0,0,0.6),
+        0 8px 22px rgba(0,0,0,0.45);
+      color: var(--silver-1); font-weight: 700; letter-spacing: 0.04em;
+      min-height: 44px;
+    }
+    details.strip > summary::-webkit-details-marker { display: none; }
+    details.strip[open] > summary .caret { transform: rotate(90deg); }
+    details.strip .caret { color: var(--teal-1); transition: transform 150ms ease; display: inline-block; width: 12px; }
+    details.strip .plus {
+      margin-left: auto;
+      width: 28px; height: 28px; border-radius: 8px;
+      display: grid; place-items: center;
+      background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(0,0,0,0.0)),
+                  linear-gradient(180deg, #1d2738, #060a14);
+      border: 1px solid rgba(180, 210, 230, 0.18);
+      color: var(--teal-1); font-weight: 800;
+    }
+    details.strip > div.strip-body {
+      padding: 14px 18px 16px;
+      background: linear-gradient(180deg, rgba(40,52,72,0.30), rgba(8,12,22,0.75));
+      border: 1px solid rgba(170, 200, 220, 0.14);
+      border-top: 0; border-radius: 0 0 14px 14px;
+    }
+
+    .persona-list, .archive-list, .session-list { display: grid; gap: 14px; margin-top: 10px; }
+    .persona-item, .archive-item, .session-chunk {
+      border-radius: 12px; padding: 14px;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(148,163,184,0.16);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    .persona-item h3, .archive-item h3, .session-chunk h3 { margin: 0 0 4px; color: var(--silver-0); font-size: 1rem; }
+    .persona-item p, .archive-item p, .session-chunk p { margin: 0 0 6px; color: var(--silver-2); font-size: 0.85rem; }
+    .archive-item a { color: var(--teal-1); text-decoration: none; font-family: var(--mono); font-size: 0.85rem; }
+    .archive-item a:hover { text-decoration: underline; }
+    .archive-item audio, .session-chunk audio { width: 100%; margin-top: 6px; }
+    .persona-item textarea {
+      width: 100%; margin-top: 6px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.55), rgba(2,6,14,0.78));
+      border: 1px solid rgba(94,234,212,0.22); border-radius: 10px;
+      padding: 10px 12px; color: var(--teal-0); font-family: var(--mono);
+      font-size: 0.9rem; min-height: 80px; resize: vertical;
+    }
+
+    /* Hidden default audio (we render our own transport) */
+    audio.hidden-audio { display: none; }
+
+    /* Responsive */
+    @media (max-width: 1100px) {
+      .desk { grid-template-columns: 1fr; }
+      .rail-left, .rail-right { flex-direction: row; flex-wrap: wrap; padding-top: 0; }
+      .icon-btn { width: 118px; }
+      .system-online { margin: 0; }
+      .meter-scale { display: none; }
+    }
+    @media (max-width: 720px) {
+      .band { grid-template-columns: repeat(2, 1fr); }
+      .audio-deck { grid-template-columns: 80px 1fr 60px; }
+      .meta-row { grid-template-columns: repeat(2, 1fr); }
+      .meta-row .sync-bars { grid-column: span 2; justify-self: end; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
+      .meter::before { transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- SVG goo filter for the mercury blob splashes -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <filter id="goo" color-interpolation-filters="sRGB">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="9" result="blur"/>
+        <feColorMatrix in="blur" mode="matrix"
+          values="1 0 0 0 0
+                  0 1 0 0 0
+                  0 0 1 0 0
+                  0 0 0 22 -8" result="goo"/>
+        <feComposite in="SourceGraphic" in2="goo" operator="atop"/>
+      </filter>
+    </defs>
+  </svg>
+
+  <!-- Hidden HTML5 audio (we drive our own transport UI) -->
+  <audio id="player" class="hidden-audio" preload="auto" playsinline></audio>
+
+  <div class="desk">
+
+    <!-- Left rail -->
+    <aside class="rail-left" aria-label="App rail">
+      <button class="icon-btn" data-scroll="llm" aria-current="true" aria-label="Connection panel"><span class="icon" aria-hidden="true">⠿</span><span class="label">Connect</span></button>
+      <button class="icon-btn" data-scroll="audio"     aria-label="Audio panel"><span class="icon" aria-hidden="true">∿</span><span class="label">Audio</span></button>
+      <button class="icon-btn" data-scroll="personas"  aria-label="Personas"><span class="icon" aria-hidden="true">▣</span><span class="label">Personas</span></button>
+      <button class="icon-btn" data-scroll="settings"  aria-label="Settings"><span class="icon" aria-hidden="true">⚙</span><span class="label">Archive</span></button>
+      <button class="icon-btn" data-scroll="about"  aria-label="About"><span class="icon" aria-hidden="true">?</span><span class="label">About</span></button>
+      <div class="system-online">
+        <div class="system-orb offline" id="system-orb" aria-hidden="true"></div>
+        <div id="system-status-label">System<br/>Offline</div>
+      </div>
+    </aside>
+
+    <!-- Stage -->
+    <div class="stage">
+
+      <header class="hero">
+        <div class="blob-field" aria-hidden="true">
+          <div class="blob l1"></div><div class="blob l2"></div><div class="blob l3"></div>
+          <div class="blob r1"></div><div class="blob r2"></div><div class="blob r3"></div>
+        </div>
+        <h1 class="wordmark">    TCR    </h1>
+        <p class="tagline"> generative psychosis </p>
+      </header>
+
+      <!-- LLM Connection -->
+      <section id="panel-llm" class="panel window glass active has-caret" role="region" aria-label="LLM Connection">
+        <div class="title-bar">
+          <div class="title-bar-text">LLM Connection</div>
+          <div class="title-bar-controls">
+            <button aria-label="Minimize"></button>
+            <button aria-label="Maximize"></button>
+            <button aria-label="Close"></button>
+          </div>
+        </div>
+        <div class="window-body">
+          <div class="llm-row">
+            <span class="orb" id="llm-orb" aria-hidden="true"></span>
+            <span class="conn-line" id="llm-line">
+              <span class="verb bad" id="llm-verb">Disconnected</span>
+              <span id="llm-message">LLM status has not been checked yet.</span>
+              <span class="latency" id="llm-latency"></span>
+            </span>
+            <button class="btn btn-secondary" id="btn-check-llm" type="button">Check LLM status</button>
+          </div>
+          <div class="meta-row">
+            <div class="meta-pill"><span class="key">MODEL</span>   <span class="val" id="meta-model">—</span></div>
+            <div class="meta-pill"><span class="key">SESSION</span> <span class="val" id="meta-session">—</span></div>
+            <div class="meta-pill"><span class="key">SYNC</span>    <span class="val" id="meta-sync">—</span></div>
+            <div class="sync-bars" aria-hidden="true" id="sync-bars">
+              <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Vote Next -->
+      <section class="panel window glass active has-caret" id="panel-vote" role="region" aria-label="Vote Next">
+        <div class="title-bar">
+          <div class="title-bar-text">Vote Next</div>
+        </div>
+        <div class="window-body">
+          <p class="form-label" id="vote-status">Loading voting round…</p>
+          <div class="preset-grid" id="vote-options"></div>
+          <div class="preset-role-toggles" id="role-vote-options"></div>
+          <div class="form-actions">
+            <button class="btn btn-secondary" id="btn-submit-vote" type="button">Submit vote</button>
+            <span class="save-status" id="vote-save-status" role="status"></span>
+          </div>
+          <label class="form-label" for="suggestion-box">Suggest a future style for admin review</label>
+          <textarea id="suggestion-box" class="prompt-box" placeholder="Example: warm 6/8 bedroom-pop with fretless bass and choir pads"></textarea>
+          <div class="form-actions">
+            <button class="btn btn-secondary" id="btn-submit-suggestion" type="button">Submit suggestion</button>
+            <span class="save-status" id="suggestion-status" role="status"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Admin -->
+      <details class="strip" id="panel-admin">
+        <summary>
+          <span class="caret" aria-hidden="true">▶</span>
+          Admin controls
+          <span class="plus" aria-hidden="true">+</span>
+        </summary>
+        <div class="strip-body">
+          <label class="form-label" for="admin-password">Admin password</label>
+          <input id="admin-password" class="prompt-box" type="password" autocomplete="current-password" placeholder="ADMIN_PASSWORD from Hetzner .env" />
+          <div class="form-actions">
+            <button class="btn btn-secondary" id="btn-admin-login" type="button">Login</button>
+            <button class="btn btn-secondary" id="btn-admin-logout" type="button">Logout</button>
+            <span class="save-status" id="admin-status" role="status"></span>
+          </div>
+          <label class="form-label" for="admin-round-json">Curate next vote round as JSON array of 2-4 options</label>
+          <textarea id="admin-round-json" class="prompt-box" placeholder='[{"id":"clairo","label":"Clairo","prompt":"78 bpm warm bedroom-pop intimacy","tempo_bpm":78,"key":"C major","psychosis_level":0.18}]'></textarea>
+          <div class="form-actions">
+            <button class="btn btn-secondary" id="btn-admin-save-round" type="button">Save vote round</button>
+            <span class="save-status" id="admin-round-status" role="status"></span>
+          </div>
+          <label class="form-label" for="admin-override-json">Backstage override JSON</label>
+          <textarea id="admin-override-json" class="prompt-box" placeholder='{"enabled":true,"prompt":"92 bpm warm stable house band","tempo_bpm":92,"key":"A minor","time_signature":"4/4","psychosis_level":0.2}'></textarea>
+          <div class="form-actions">
+            <button class="btn btn-secondary" id="btn-admin-save-override" type="button">Save override</button>
+            <button class="btn btn-secondary" id="btn-admin-clear-override" type="button">Clear override</button>
+            <button class="btn btn-secondary" id="btn-admin-force-fallback" type="button">Toggle archive fallback</button>
+            <span class="save-status" id="admin-override-status" role="status"></span>
+          </div>
+          <div class="session-list" id="admin-suggestions"></div>
+          <div class="session-list" id="collapse-metrics"></div>
+        </div>
+      </details>
+
+      <!-- Live Influence -->
+      <section class="panel window glass active has-caret" role="region" aria-label="Live Influence">
+        <div class="title-bar">
+          <div class="title-bar-text">Live Influence</div>
+          <div class="title-bar-controls"><button aria-label="Help"></button></div>
+        </div>
+        <div class="window-body">
+            <div class="itunes-player" id="itunes-player">
+              <div class="art" id="itunes-art">&#9835;</div>
+              <div class="meta">
+                <div class="mode-name" id="itunes-mode-name">Custom</div>
+                <div class="mode-desc" id="itunes-mode-desc">Freeform prompt mode. Write anything and the ensemble will interpret it.</div>
+                <div class="mode-stats" id="itunes-mode-stats">
+                  <span id="itunes-bpm">92 BPM</span>
+                  <span id="itunes-key">A MINOR</span>
+                  <span id="itunes-drift">DRIFT 25%</span>
+                </div>
+              </div>
+              <div class="marquee-bar">
+                <span class="marquee-text" id="itunes-marquee">&#9835; Keep the band spacious, late-night, and coherent. &#9835;</span>
+              </div>
+            </div>
+          <p class="form-label" id="hint-conductor">Conductor status: loading…</p>
+          <label class="form-label" for="prompt-box">Prompt the ensemble in natural language</label>
+          <textarea id="prompt-box" class="prompt-box" placeholder="Example: make it haunted, sparse, metallic, and unstable"></textarea>
+          <div class="drift-row">
+            <label class="form-label" for="drift">Psychosis level</label>
+            <input id="drift" class="slider" type="range" min="0" max="100" value="25" />
+            <span class="drift-readout" id="drift-readout">25 %</span>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" id="btn-apply" type="button">
+              <span aria-hidden="true">▶</span> Apply prompt and start live audio
+            </button>
+            <button class="btn btn-secondary" id="btn-archive" type="button">
+              <span aria-hidden="true">∿</span> Play latest archived recording
+            </button>
+            <span class="save-status" id="apply-status" role="status"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Live Audio -->
+      <section id="panel-audio" class="panel window glass active has-caret" role="region" aria-label="Live Audio">
+        <div class="title-bar">
+          <div class="title-bar-text">Live Audio</div>
+        </div>
+        <div class="window-body">
+          <div class="audio-status">
+            <span class="green-dot bad" id="buffer-dot" aria-hidden="true"></span>
+            <span id="buffer-text">Live buffer not ready</span>
+            <span class="timer" id="audio-timer">00:00:00</span>
+            <span class="live-pill idle" id="live-pill">IDLE</span>
+            <span class="audio-meta">
+              <span class="pill"><span class="key">BPM</span><span id="meta-bpm">—</span></span>
+              <span class="pill"><span class="key">KEY</span><span id="meta-key">—</span></span>
+            </span>
+          </div>
+
+          <div class="audio-deck">
+            <!-- Master Out chrome knob -->
+            <div class="master">
+              <div class="lbl">Master Out</div>
+              <div class="knob" id="master-knob"
+                   role="slider" aria-label="Master volume"
+                   aria-valuemin="0" aria-valuemax="100" aria-valuenow="80"
+                   tabindex="0"></div>
+              <div class="level">LEVEL <b id="master-level">-1.9 dB</b></div>
+            </div>
+
+            <!-- Spectrum visualizer -->
+            <div class="spectrum-wrap">
+              <canvas class="spectrum-canvas" id="spectrum" width="800" height="100" aria-hidden="true"></canvas>
+              <div class="freq-scale" aria-hidden="true">
+                <span>20</span><span>50</span><span>100</span><span>200</span><span>500</span>
+                <span>1K</span><span>2K</span><span>5K</span><span>10K</span><span>20K</span>
+              </div>
+            </div>
+
+            <!-- L/R LED meters -->
+            <div class="meters" aria-label="Stereo meters">
+              <div class="meter l" id="meter-l" aria-hidden="true"></div>
+              <div class="meter r" id="meter-r" aria-hidden="true"></div>
+              <div class="meter-labels"><span>L</span><span>R</span></div>
+              <div class="meter-scale">
+                <span>+6</span><span>0</span><span>-12</span>
+                <span>-24</span><span>-36</span><span>-48</span><span>-60</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Transport -->
+          <div class="transport">
+            <button class="tbtn" id="t-skip-back" aria-label="Skip back 30 seconds">⏮</button>
+            <button class="tbtn" id="t-rew" aria-label="Rewind 10 seconds">⏪</button>
+            <button class="tbtn play" id="t-play" aria-label="Play / Pause">▶</button>
+            <button class="tbtn" id="t-stop" aria-label="Stop">⏹</button>
+            <button class="tbtn" id="t-ff" aria-label="Fast forward 10 seconds">⏩</button>
+            <button class="tbtn" id="t-skip-fwd" aria-label="Skip forward 30 seconds">⏭</button>
+            <span class="spacer"></span>
+            <button class="sync-btn" id="t-sync" aria-pressed="false" aria-label="Sync to BPM">
+              <span class="led-dot" aria-hidden="true"></span> SYNC
+            </button>
+            <select class="div-select" id="t-div" aria-label="Subdivision">
+              <option>1/2</option><option selected>1/4</option>
+              <option>1/8</option><option>1/16</option>
+            </select>
+            <button class="tap-btn" id="t-tap" aria-label="Tap tempo">
+              TAP <span class="tap-bpm" id="tap-bpm"></span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Ensemble band -->
+      <section class="band" aria-label="Ensemble" id="band-grid">
+        <article class="role-card panel window glass active percussion" data-role="percussion">
+          <div class="title-bar">
+            <div class="title-bar-text"><span class="role-head"><span class="led led-gray" aria-hidden="true" data-role-led></span> Percussion</span></div>
+            <div class="title-bar-controls"><button aria-label="Help"></button><button aria-label="Menu"></button></div>
+          </div>
+          <div class="window-body">
+            <div class="role-grid">
+              <div class="role-fields">
+                <span class="key">Status</span>
+                <span class="status" data-role-status>—</span>
+                <span class="param-key" data-param-key>Swing</span>
+                <span class="param-val" data-param-val>—</span>
+                <div class="role-bars" aria-hidden="true" data-role-bars>
+                  <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                </div>
+              </div>
+              <div class="role-knob" data-role-knob aria-hidden="true"></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="role-card panel window glass active bass" data-role="bass">
+          <div class="title-bar">
+            <div class="title-bar-text"><span class="role-head"><span class="led led-gray" aria-hidden="true" data-role-led></span> Bass</span></div>
+            <div class="title-bar-controls"><button aria-label="Help"></button><button aria-label="Menu"></button></div>
+          </div>
+          <div class="window-body">
+            <div class="role-grid">
+              <div class="role-fields">
+                <span class="key">Status</span>
+                <span class="status" data-role-status>—</span>
+                <span class="param-key" data-param-key>Groove</span>
+                <span class="param-val" data-param-val>—</span>
+                <div class="role-bars" aria-hidden="true" data-role-bars>
+                  <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                </div>
+              </div>
+              <div class="role-knob" data-role-knob aria-hidden="true"></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="role-card panel window glass active piano" data-role="piano">
+          <div class="title-bar">
+            <div class="title-bar-text"><span class="role-head"><span class="led led-gray" aria-hidden="true" data-role-led></span> Piano</span></div>
+            <div class="title-bar-controls"><button aria-label="Help"></button><button aria-label="Menu"></button></div>
+          </div>
+          <div class="window-body">
+            <div class="role-grid">
+              <div class="role-fields">
+                <span class="key">Status</span>
+                <span class="status" data-role-status>—</span>
+                <span class="param-key" data-param-key>Dynamics</span>
+                <span class="param-val" data-param-val>—</span>
+                <div class="role-bars" aria-hidden="true" data-role-bars>
+                  <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                </div>
+              </div>
+              <div class="role-knob" data-role-knob aria-hidden="true"></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="role-card panel window glass active lead" data-role="lead">
+          <div class="title-bar">
+            <div class="title-bar-text"><span class="role-head"><span class="led led-gray" aria-hidden="true" data-role-led></span> Lead</span></div>
+            <div class="title-bar-controls"><button aria-label="Help"></button><button aria-label="Menu"></button></div>
+          </div>
+          <div class="window-body">
+            <div class="role-grid">
+              <div class="role-fields">
+                <span class="key">Status</span>
+                <span class="status" data-role-status>—</span>
+                <span class="param-key" data-param-key>Intensity</span>
+                <span class="param-val" data-param-val>—</span>
+                <div class="role-bars" aria-hidden="true" data-role-bars>
+                  <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                </div>
+              </div>
+              <div class="role-knob" data-role-knob aria-hidden="true"></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="role-card panel window glass active texture" data-role="texture">
+          <div class="title-bar">
+            <div class="title-bar-text"><span class="role-head"><span class="led led-gray" aria-hidden="true" data-role-led></span> Texture</span></div>
+            <div class="title-bar-controls"><button aria-label="Help"></button><button aria-label="Menu"></button></div>
+          </div>
+          <div class="window-body">
+            <div class="role-grid">
+              <div class="role-fields">
+                <span class="key">Status</span>
+                <span class="status" data-role-status>—</span>
+                <span class="param-key" data-param-key>Density</span>
+                <span class="param-val" data-param-val>—</span>
+                <div class="role-bars" aria-hidden="true" data-role-bars>
+                  <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                </div>
+              </div>
+              <div class="role-knob" data-role-knob aria-hidden="true"></div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <!-- Personas -->
+      <details class="strip" id="panel-personas">
+        <summary>
+          <span class="caret" aria-hidden="true">▶</span>
+          Personas and prompts
+          <span class="plus" aria-hidden="true">+</span>
+        </summary>
+        <div class="strip-body">
+          <section class="preset-panel" aria-label="Preset modes">
+            <div class="preset-head">
+              <div class="preset-title">Preset modes</div>
+              <div class="preset-active" id="preset-active-label">Active: None</div>
+            </div>
+            <div class="preset-grid" id="preset-grid"></div>
+            <p class="preset-desc" id="preset-description">Preset overlays sit on top of your base personas without overwriting them.</p>
+            <div class="preset-role-toggles" id="preset-role-toggles"></div>
+            <div class="form-actions">
+              <span class="save-status" id="preset-status" role="status"></span>
+            </div>
+          </section>
+          <p class="form-label">Texture is the ambient glue: pads, drones, shimmer, and slow color so the band does not sound like dry MIDI. Edits save to <code>public/personas.json</code>.</p>
+          <div class="persona-list" id="persona-list"></div>
+          <div class="form-actions">
+            <button class="btn btn-secondary" id="btn-save-personas" type="button">Save personas</button>
+            <span class="save-status" id="personas-status" role="status"></span>
+          </div>
+        </div>
+      </details>
+
+      <!-- Current session -->
+      <details class="strip" open>
+        <summary>
+          <span class="caret" aria-hidden="true">▶</span>
+          Current stream recording
+          <span class="plus" aria-hidden="true">+</span>
+        </summary>
+        <div class="strip-body">
+          <p class="form-label" id="current-session-status">A single growing recording from the active generator session appears here.</p>
+          <div class="session-list" id="current-session-list"></div>
+        </div>
+      </details>
+
+      <!-- Archive -->
+      <details class="strip" id="panel-settings">
+        <summary>
+          <span class="caret" aria-hidden="true">▶</span>
+          Previous generated runs
+          <span class="plus" aria-hidden="true">+</span>
+        </summary>
+        <div class="strip-body">
+          <p class="form-label">Every generator run is archived as an MP3 plus MIDI/WAV/state files.</p>
+          <div class="archive-list" id="archive-list"></div>
+        </div>
+      </details>
+
+      <!-- About -->
+      <section id="panel-about" class="panel window glass active has-caret" role="region" aria-label="About The Chinese Room Radio">
+        <div class="title-bar">
+          <div class="title-bar-text">About / Disclaimer</div>
+        </div>
+        <div class="window-body">
+          <p class="form-label">The Chinese Room Radio is a Resoworks project for the AIPS Summit: a meditation on the Chinese Room, and on LLM systems as procedural imitations of understanding.</p>
+          <p class="form-label">The original experiment has been adapted into an ongoing radio station where listeners vote on what style the next two minutes should emulate.</p>
+          <p class="form-label">Experiment questions: how many cycles does it take for an agent to capture a style in a prompt; how long before the style collapses; and how long can a human listen before the loop becomes aesthetically unstable?</p>
+          <p class="form-label">Collapse is behavioral: people stop nudging, stop voting, repeat the same choice, or settle into believing the copy is close enough.</p>
+          <p class="form-label"><strong>Disclaimer.</strong> This experimental work is offered as parody, commentary, and research-oriented artistic expression. It is not affiliated with, sponsored by, endorsed by, or approved by any referenced artist, label, rights holder, or third party. All trademarks, copyrights, publicity rights, and related rights remain the property of their respective owners. No ownership, license, or transfer of rights is claimed or implied. The project is not intended to generate revenue, impersonate any artist, reproduce protected works, or violate applicable law.</p>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Right rail -->
+    <aside class="rail-right" aria-label="System stats">
+      <div class="sys-time-card">
+        <div class="key">SYSTEM TIME</div>
+        <div class="clock" id="sys-clock">--:--:--</div>
+        <div class="date" id="sys-date">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="key">CPU</div>
+        <div class="val" id="stat-cpu">—%</div>
+        <div class="stat-bars" aria-hidden="true" id="bars-cpu">
+          <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="key">RAM</div>
+        <div class="val" id="stat-ram">—%</div>
+        <div class="stat-bars" aria-hidden="true" id="bars-ram">
+          <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="key">NET</div>
+        <div class="val"><span id="stat-net">—</span> <span style="font-size:10px;color:var(--silver-3)">MB/s</span></div>
+        <div class="stat-bars" aria-hidden="true" id="bars-net">
+          <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script src="./config.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

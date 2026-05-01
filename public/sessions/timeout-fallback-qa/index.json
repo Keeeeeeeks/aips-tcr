@@ -1,0 +1,18 @@
+{
+  "id": "timeout-fallback-qa",
+  "created_at": "2026-04-28T13:45:56Z",
+  "updated_at": "2026-04-28T13:45:56Z",
+  "title": "Current stream session timeout-fallback-qa",
+  "chunk_seconds": 2,
+  "max_recording_seconds": 3600,
+  "duration_seconds": 3.688685,
+  "recording": "/public/sessions/timeout-fallback-qa/current-stream.mp3",
+  "chunks": [
+    {
+      "id": "section_00000",
+      "created_at": "2026-04-28T13:45:56Z",
+      "recording": "/public/stream/section_00000.mp3",
+      "title": "Section 0 \u00b7 make the next bar 150 bpm and sound like sewerslut"
+    }
+  ]
+}

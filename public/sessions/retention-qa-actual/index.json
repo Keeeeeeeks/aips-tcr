@@ -1,0 +1,24 @@
+{
+  "id": "retention-qa-actual",
+  "created_at": "2026-04-28T04:02:16Z",
+  "updated_at": "2026-04-28T04:02:18Z",
+  "title": "Current stream session retention-qa-actual",
+  "chunk_seconds": 2,
+  "max_recording_seconds": 8,
+  "duration_seconds": 7.37737,
+  "recording": "/public/sessions/retention-qa-actual/current-stream.mp3",
+  "chunks": [
+    {
+      "id": "section_00003",
+      "created_at": "2026-04-28T04:02:18Z",
+      "recording": "/public/stream/section_00003.mp3",
+      "title": "Section 3 \u00b7 make the next bar 150 bpm and sound like sewerslut"
+    },
+    {
+      "id": "section_00002",
+      "created_at": "2026-04-28T04:02:16Z",
+      "recording": "/public/stream/section_00002.mp3",
+      "title": "Section 2 \u00b7 make the next bar 150 bpm and sound like sewerslut"
+    }
+  ]
+}

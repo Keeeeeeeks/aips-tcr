@@ -1,0 +1,18 @@
+{
+  "id": "qa-conductor-ultrawork",
+  "created_at": "2026-05-01T20:54:47Z",
+  "updated_at": "2026-05-01T20:54:47Z",
+  "title": "Current stream session qa-conductor-ultrawork",
+  "chunk_seconds": 1,
+  "max_recording_seconds": 0,
+  "duration_seconds": 2.68,
+  "recording": "/public/sessions/qa-conductor-ultrawork/current-stream.mp3",
+  "chunks": [
+    {
+      "id": "section_00000",
+      "created_at": "2026-05-01T20:54:47Z",
+      "recording": "/public/stream/section_00000.mp3",
+      "title": "Section 0 \u00b7 150 bpm, frantic breakcore pressure, distorted chopped breaks, dissociated rever"
+    }
+  ]
+}

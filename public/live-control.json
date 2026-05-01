@@ -1,0 +1,12 @@
+{
+  "prompt": "test",
+  "psychosis_level": 0.1,
+  "updated_at": "2026-05-01T21:20:45Z",
+  "applies_to": "next generated section",
+  "delivery_status": "control_server_received; llm_segment_conductor_not_running_yet",
+  "next_section_eta_seconds": null,
+  "next_effect": "next generator run/form",
+  "tempo_bpm": 92,
+  "key": "A minor",
+  "time_signature": "4/4"
+}

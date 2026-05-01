@@ -1,0 +1,17 @@
+{
+  "id": "qa-ultrawork",
+  "created_at": "2026-05-01T20:54:27Z",
+  "updated_at": "2026-05-01T20:54:28Z",
+  "title": "Current stream session qa-ultrawork",
+  "chunk_seconds": 1,
+  "duration_seconds": 1.0,
+  "recording": "/public/sessions/qa-ultrawork/current-stream.mp3",
+  "chunks": [
+    {
+      "id": "20260501T165427",
+      "created_at": "20260501T165427",
+      "recording": "/public/sessions/qa-ultrawork/chunk_20260501T165427.mp3",
+      "title": "Current stream chunk 20260501T165427"
+    }
+  ]
+}

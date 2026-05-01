@@ -1,0 +1,30 @@
+{
+  "id": "prebuffer-qa",
+  "created_at": "2026-04-28T13:35:25Z",
+  "updated_at": "2026-04-28T13:35:27Z",
+  "title": "Current stream session prebuffer-qa",
+  "chunk_seconds": 2,
+  "max_recording_seconds": 20,
+  "duration_seconds": 11.066055,
+  "recording": "/public/sessions/prebuffer-qa/current-stream.mp3",
+  "chunks": [
+    {
+      "id": "section_00002",
+      "created_at": "2026-04-28T13:35:27Z",
+      "recording": "/public/stream/section_00002.mp3",
+      "title": "Section 2 \u00b7 make the next bar 150 bpm and sound like sewerslut"
+    },
+    {
+      "id": "section_00001",
+      "created_at": "2026-04-28T13:35:26Z",
+      "recording": "/public/stream/section_00001.mp3",
+      "title": "Section 1 \u00b7 make the next bar 150 bpm and sound like sewerslut"
+    },
+    {
+      "id": "section_00000",
+      "created_at": "2026-04-28T13:35:25Z",
+      "recording": "/public/stream/section_00000.mp3",
+      "title": "Section 0 \u00b7 make the next bar 150 bpm and sound like sewerslut"
+    }
+  ]
+}

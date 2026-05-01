@@ -1,0 +1,14 @@
+[Unit]
+Description=AIPS segment conductor
+After=network.target aips-control-server.service
+
+[Service]
+WorkingDirectory=/opt/aips
+EnvironmentFile=/opt/aips/.env
+Environment=AIPS_STATE_DIR=/var/lib/aips/radio-state
+ExecStart=/usr/bin/python3 scripts/segment_conductor.py --session-id summit-demo --section-bars 16 --prebuffer-sections 2 --agent-mode heuristic --soundfont ${SOUNDFONT_PATH}
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

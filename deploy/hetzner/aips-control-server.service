@@ -1,0 +1,18 @@
+[Unit]
+Description=AIPS radio control server
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/aips
+EnvironmentFile=/opt/aips/.env
+Environment=AIPS_SECURE_COOKIES=1
+Environment=AIPS_COOKIE_SAMESITE=None
+Environment=AIPS_STATE_DIR=/var/lib/aips/radio-state
+Environment=AIPS_ALLOWED_ORIGINS=https://your-vercel-app.vercel.app
+Environment=AIPS_TRUSTED_PROXY_RANGES=127.0.0.1/32,::1/128
+ExecStart=/usr/bin/python3 scripts/control_server.py --host 127.0.0.1 --port 8765
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

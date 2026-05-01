@@ -1,0 +1,652 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Ensemble · live generative ensemble control</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2306070b'/%3E%3Ccircle cx='32' cy='32' r='18' fill='%235eead4'/%3E%3Cpath d='M24 38V22l18 8-18 8z' fill='%23042f2e'/%3E%3C/svg%3E" />
+    <style>
+      :root {
+        color-scheme: dark;
+        --font-ui: Fixedsys, Terminal, "Lucida Console", "Courier New", Monaco, monospace;
+        --font-mono: Fixedsys, Terminal, "Lucida Console", "Courier New", Monaco, monospace;
+        --bg-0: #06070b;
+        --panel-bg-top: rgba(34, 40, 56, 0.78);
+        --panel-bg-bottom: rgba(8, 10, 18, 0.86);
+        --panel-border: rgba(180, 210, 230, 0.16);
+        --panel-shine: rgba(255, 255, 255, 0.12);
+        --panel-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+        --silver-0: #f1f5f9;
+        --silver-1: #cbd5e1;
+        --silver-2: #94a3b8;
+        --silver-3: #64748b;
+        --teal-0: #ccfbf1;
+        --teal-1: #5eead4;
+        --teal-2: #14b8a6;
+        --violet-2: #a78bfa;
+        --green-1: #22c55e;
+        --red-1: #ef4444;
+        --amber-1: #f59e0b;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        font-family: var(--font-ui);
+        font-smooth: never; -webkit-font-smoothing: none; text-rendering: geometricPrecision;
+        background: var(--bg-0);
+        color: var(--silver-1);
+        min-height: 100vh;
+        background-image:
+          radial-gradient(circle at 12% 18%, rgba(124, 58, 237, 0.18), transparent 38%),
+          radial-gradient(circle at 88% 78%, rgba(20, 184, 166, 0.16), transparent 38%),
+          radial-gradient(circle at 50% 110%, rgba(8, 145, 178, 0.18), transparent 50%),
+          linear-gradient(180deg, #06070b 0%, #04050a 100%);
+        background-attachment: fixed;
+      }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background-image:
+          linear-gradient(to right, rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+        background-size: 48px 48px;
+        mask-image: radial-gradient(circle at 50% 40%, rgba(0, 0, 0, 0.7), transparent 70%);
+        -webkit-mask-image: radial-gradient(circle at 50% 40%, rgba(0, 0, 0, 0.7), transparent 70%);
+      }
+      main { width: min(1080px, calc(100vw - 32px)); margin: 32px auto 64px; display: grid; gap: 18px; }
+      .hud-header { position: relative; text-align: center; padding: 32px 0 12px; }
+      .logo {
+        font-family: var(--font-ui); font-weight: 900; font-style: normal;
+        font-size: clamp(2.4rem, 6vw, 4.8rem); letter-spacing: 0.02em; margin: 0; text-transform: uppercase;
+        background: linear-gradient(180deg, #f8fafc 0%, #cbd5e1 28%, #475569 52%, #94a3b8 70%, #f8fafc 100%);
+        -webkit-background-clip: text; background-clip: text; color: transparent;
+        filter: drop-shadow(0 1px 0 rgba(255,255,255,0.4)) drop-shadow(0 -1px 0 rgba(0,0,0,0.6))
+          drop-shadow(0 8px 24px rgba(94,234,212,0.18)) drop-shadow(0 0 32px rgba(167,139,250,0.12));
+      }
+      .tagline { margin: 4px 0 0; font-size: 0.85rem; letter-spacing: 0.18em; text-transform: lowercase; color: var(--teal-1); font-style: italic; }
+      .sys-time { position: absolute; top: 24px; right: 8px; border: 1px solid var(--panel-border); border-radius: 10px;
+        background: linear-gradient(180deg, rgba(40,46,62,0.72), rgba(8,10,18,0.82)); padding: 8px 12px; text-align: right;
+        font-family: var(--font-mono); box-shadow: var(--panel-shadow), inset 0 1px 0 var(--panel-shine); }
+      .sys-label { font-size: 0.62rem; letter-spacing: 0.18em; color: var(--silver-3); }
+      .sys-clock { font-size: 1rem; color: var(--teal-1); font-variant-numeric: tabular-nums; }
+      .sys-date { font-size: 0.7rem; color: var(--silver-2); font-variant-numeric: tabular-nums; }
+      .panel { position: relative; border-radius: 18px; border: 1px solid var(--panel-border);
+        background: linear-gradient(180deg, var(--panel-bg-top), var(--panel-bg-bottom));
+        box-shadow: var(--panel-shadow), inset 0 1px 0 var(--panel-shine), inset 0 -1px 0 rgba(0,0,0,0.6);
+        backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); overflow: hidden; }
+      .panel::before { content: ""; position: absolute; inset: 0; border-radius: 18px; pointer-events: none;
+        background: linear-gradient(180deg, rgba(255,255,255,0.06), transparent 16%); }
+      .panel-bar { display: flex; align-items: center; gap: 12px; padding: 12px 18px;
+        background: linear-gradient(180deg, rgba(180,210,230,0.10), rgba(20,28,40,0.18));
+        border-bottom: 1px solid rgba(255,255,255,0.06); }
+      .panel-title { font-size: 0.95rem; font-weight: 800; letter-spacing: 0.04em; color: var(--silver-0); text-shadow: 0 1px 0 rgba(0,0,0,0.6); }
+      .panel-meta { margin-left: auto; display: flex; gap: 10px; align-items: center; font-family: var(--font-mono); }
+      .meta-pair { display: inline-flex; align-items: baseline; gap: 6px; padding: 4px 10px; border-radius: 999px;
+        background: rgba(0,0,0,0.36); border: 1px solid rgba(94,234,212,0.18); font-variant-numeric: tabular-nums; }
+      .meta-key { font-size: 0.65rem; letter-spacing: 0.18em; color: var(--silver-3); }
+      .meta-value { font-size: 0.85rem; color: var(--teal-1); }
+      .panel-body { padding: 18px; }
+      .hint { margin: 0; color: var(--silver-2); font-size: 0.92rem; line-height: 1.55; }
+      .hint + .hint { margin-top: 6px; }
+      code { font-family: var(--font-mono); background: rgba(0,0,0,0.45); border: 1px solid rgba(148,163,184,0.18);
+        border-radius: 6px; padding: 1px 6px; color: var(--teal-0); font-size: 0.85em; }
+      .llm-row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 14px; }
+      .llm-meta { grid-column: 1 / -1; margin: 14px 0 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; padding: 0; }
+      .llm-meta > div { border: 1px solid rgba(148,163,184,0.16); background: rgba(0,0,0,0.32); border-radius: 10px;
+        padding: 8px 10px; font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.05); }
+      .llm-meta dt { font-size: 0.6rem; letter-spacing: 0.18em; color: var(--silver-3); margin: 0 0 4px; }
+      .llm-meta dd { margin: 0; font-size: 0.85rem; color: var(--teal-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .orb { width: 18px; height: 18px; border-radius: 50%;
+        background: radial-gradient(circle at 32% 30%, rgba(255,255,255,0.85), transparent 38%),
+          radial-gradient(circle at 50% 60%, var(--red-1), #4b1212 80%);
+        box-shadow: 0 0 18px rgba(239,68,68,0.7), inset 0 -2px 4px rgba(0,0,0,0.6); flex-shrink: 0; }
+      .orb.connected { background: radial-gradient(circle at 32% 30%, rgba(255,255,255,0.85), transparent 38%),
+          radial-gradient(circle at 50% 60%, var(--green-1), #064e3b 80%);
+        box-shadow: 0 0 22px rgba(34,197,94,0.75), inset 0 -2px 4px rgba(0,0,0,0.6); }
+      .llm-status-text { color: var(--silver-1); font-size: 0.95rem; line-height: 1.45; }
+      .form-row { display: grid; gap: 8px; margin: 14px 0; }
+      .form-label { font-size: 0.72rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--silver-3); }
+      .slider-row { grid-template-columns: max-content 1fr max-content; align-items: center; gap: 14px; }
+      .form-readout { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--teal-1); min-width: 4ch; text-align: right; }
+      textarea { width: 100%; font-family: var(--font-mono); font-size: 1rem; color: var(--teal-0);
+        background: linear-gradient(180deg, rgba(0,0,0,0.45), rgba(2,6,14,0.7));
+        border: 1px solid rgba(94,234,212,0.22); border-radius: 12px; padding: 12px 14px; line-height: 1.5;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -1px 0 rgba(0,0,0,0.6);
+        transition: border-color 150ms ease, box-shadow 150ms ease; min-height: 96px; resize: vertical; }
+      textarea:focus { outline: none; border-color: rgba(94,234,212,0.55);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(0,0,0,0.6), 0 0 0 3px rgba(94,234,212,0.18); }
+      ::placeholder { color: var(--silver-3); opacity: 0.7; }
+      input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 8px;
+        background: linear-gradient(180deg, rgba(0,0,0,0.5), rgba(0,0,0,0.85));
+        border: 1px solid rgba(148,163,184,0.18); border-radius: 999px;
+        box-shadow: inset 0 1px 1px rgba(0,0,0,0.6); }
+      input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 22px; height: 22px;
+        border-radius: 50%; background: radial-gradient(circle at 32% 30%, rgba(255,255,255,0.9), transparent 40%),
+          linear-gradient(180deg, #5eead4, #0f766e); border: 1px solid rgba(255,255,255,0.4);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.5), 0 0 12px rgba(94,234,212,0.5); cursor: pointer; }
+      input[type="range"]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%;
+        background: radial-gradient(circle at 32% 30%, rgba(255,255,255,0.9), transparent 40%),
+          linear-gradient(180deg, #5eead4, #0f766e); border: 1px solid rgba(255,255,255,0.4);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.5), 0 0 12px rgba(94,234,212,0.5); cursor: pointer; }
+      .form-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 14px; }
+      button { font-family: inherit; }
+      .btn-primary { appearance: none; border: 0; cursor: pointer; border-radius: 999px; padding: 14px 22px;
+        font-weight: 800; font-size: 0.95rem; color: #052e2a;
+        background: linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0) 38%),
+          linear-gradient(180deg, #99f6e4, #14b8a6);
+        box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 -2px 4px rgba(0,0,0,0.45) inset, 0 8px 24px rgba(20,184,166,0.4);
+        display: inline-flex; align-items: center; gap: 10px; transition: transform 150ms ease, box-shadow 150ms ease; min-height: 44px; }
+      @media (hover: hover) { .btn-primary:hover { background: linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0) 38%),
+          linear-gradient(180deg, #a7f3d0, #14b8a6); } }
+      .btn-primary:active { transform: translateY(1px); }
+      .btn-primary[disabled] { cursor: progress; filter: saturate(0.6); }
+      .btn-secondary { appearance: none; cursor: pointer; border-radius: 999px; padding: 12px 18px; font-weight: 700;
+        font-size: 0.9rem; color: var(--teal-0);
+        background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0) 35%),
+          linear-gradient(180deg, rgba(45,64,80,0.55), rgba(8,16,26,0.85));
+        border: 1px solid rgba(94,234,212,0.34);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -1px 0 rgba(0,0,0,0.6), 0 6px 18px rgba(0,0,0,0.4);
+        display: inline-flex; align-items: center; gap: 10px; min-height: 44px; }
+      @media (hover: hover) { .btn-secondary:hover { background: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0) 35%),
+          linear-gradient(180deg, rgba(60,84,105,0.65), rgba(8,16,26,0.85)); } }
+      .btn-secondary[disabled] { cursor: progress; opacity: 0.7; }
+      .btn-icon { font-size: 0.85rem; filter: drop-shadow(0 1px 0 rgba(255,255,255,0.4)); }
+      .save-status { color: var(--silver-2); font-size: 0.86rem; font-family: var(--font-mono); }
+      .save-status.error { color: #fca5a5; }
+      .error { color: #fca5a5; }
+      .audio-shell { margin-top: 12px; padding: 14px; border-radius: 16px;
+        background: linear-gradient(180deg, rgba(0,0,0,0.65), rgba(0,0,0,0.85));
+        border: 1px solid rgba(94,234,212,0.16);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(0,0,0,0.7); }
+      audio { width: 100%; filter: drop-shadow(0 6px 18px rgba(0,0,0,0.5)); }
+      .band { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; }
+      .role-card { position: relative; border-radius: 16px; padding: 14px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.6));
+        border: 1px solid rgba(148,163,184,0.18);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.7), 0 12px 32px rgba(0,0,0,0.5);
+        display: grid; gap: 8px; min-height: 130px; }
+      .role-head { display: flex; align-items: center; gap: 8px; }
+      .role-card .pulse { width: 12px; height: 12px; border-radius: 50%;
+        background: var(--teal-1); box-shadow: 0 0 16px rgba(94,234,212,0.7); animation: pulse 1.6s infinite ease-in-out; }
+      .role-card.percussion .pulse, .role-card.bass .pulse { background: var(--green-1); box-shadow: 0 0 16px rgba(34,197,94,0.7); }
+      .role-card.piano .pulse { background: var(--teal-1); box-shadow: 0 0 16px rgba(94,234,212,0.7); }
+      .role-card.lead .pulse { background: var(--violet-2); box-shadow: 0 0 16px rgba(167,139,250,0.7); }
+      .role-card.texture .pulse { background: var(--amber-1); box-shadow: 0 0 16px rgba(245,158,11,0.7); }
+      .role-name { font-weight: 800; letter-spacing: 0.04em; color: var(--silver-0); text-transform: capitalize; }
+      .role-status { font-size: 0.72rem; letter-spacing: 0.18em; color: var(--silver-3); text-transform: uppercase; font-family: var(--font-mono); }
+      .role-line { font-family: var(--font-mono); color: var(--silver-1); font-variant-numeric: tabular-nums; font-size: 0.84rem; }
+      details.collapsible > summary { list-style: none; }
+      details.collapsible > summary::-webkit-details-marker { display: none; }
+      summary { cursor: pointer; min-height: 44px; }
+      summary:focus-visible { outline: 2px solid var(--teal-1); outline-offset: 4px; }
+      .caret { display: inline-block; width: 14px; color: var(--teal-1); transition: transform 150ms ease; }
+      details.collapsible[open] > summary .caret { transform: rotate(90deg); }
+      .persona-list, .current-session-list, .archive-list { display: grid; gap: 14px; margin-top: 14px; }
+      .persona-item, .session-chunk, .archive-item { border-radius: 14px; padding: 14px;
+        background: rgba(255,255,255,0.04); border: 1px solid rgba(148,163,184,0.16);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.08); }
+      .persona-item h3, .session-chunk h3, .archive-item h3 { margin: 0 0 4px; color: var(--silver-0); }
+      .persona-item p, .session-chunk p, .archive-item p { margin: 0; color: var(--silver-2); }
+      .archive-item a { color: var(--teal-1); text-decoration: none; }
+      .archive-item a:hover { text-decoration: underline; }
+      details.prompt-panel > summary { margin-top: 10px; color: var(--teal-0); font-weight: 700; font-size: 0.85rem; letter-spacing: 0.04em; }
+      details.prompt-panel > summary::-webkit-details-marker { display: none; }
+      @media (prefers-reduced-motion: reduce) { .role-card .pulse { animation: none; } .caret { transition: none; } }
+      @keyframes pulse { 0%, 100% { transform: scale(0.85); opacity: 0.6; } 50% { transform: scale(1.18); opacity: 1; } }
+      @media (max-width: 720px) {
+        .llm-row { grid-template-columns: auto 1fr; }
+        .llm-row .btn-secondary { grid-column: 1 / -1; }
+        .llm-meta { grid-template-columns: repeat(2, 1fr); }
+        .panel-meta { display: none; }
+        .sys-time { position: static; display: inline-block; margin: 0 auto 16px; }
+        .hud-header { padding-top: 16px; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header class="hud-header">
+        <h1 class="logo">AI Ensemble</h1>
+        <p class="tagline">live generative ensemble control</p>
+        <aside class="sys-time" aria-live="off">
+          <div class="sys-label">SYSTEM TIME</div>
+          <div class="sys-clock" id="sys-clock">--:--:--</div>
+          <div class="sys-date" id="sys-date">—</div>
+        </aside>
+      </header>
+
+      <section class="panel" aria-labelledby="llm-title">
+        <div class="panel-bar"><span class="panel-title" id="llm-title">LLM Connection</span></div>
+        <div class="panel-body llm-row">
+          <span class="orb" id="llm-light" aria-hidden="true"></span>
+          <span class="llm-status-text" id="llm-status" role="status">LLM status has not been checked yet.</span>
+          <button class="btn-secondary" id="check-llm-status" type="button">Check LLM status</button>
+          <dl class="llm-meta">
+            <div><dt>MODE</dt><dd id="llm-meta-mode">—</dd></div>
+            <div><dt>SOURCE</dt><dd id="llm-meta-source">—</dd></div>
+            <div><dt>SESSION</dt><dd id="llm-meta-session">—</dd></div>
+            <div><dt>SYNC</dt><dd id="llm-meta-sync">—</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="live-influence-title">
+        <div class="panel-bar"><span class="panel-title" id="live-influence-title">Live Influence</span></div>
+        <div class="panel-body">
+          <p class="hint" id="live-control-current">Loading current live prompt…</p>
+          <p class="hint" id="conductor-status">Conductor status: loading…</p>
+          <div class="form-row">
+            <label class="form-label" for="live-prompt">Prompt the ensemble in natural language</label>
+            <textarea id="live-prompt" aria-describedby="live-control-help" placeholder="Example: make it haunted, sparse, metallic, and unstable"></textarea>
+            <p class="hint" id="live-control-help">Written to <code>public/live-control.json</code>. Confirming starts the live stream and applies the prompt to the next generated section.</p>
+          </div>
+          <div class="form-row slider-row">
+            <label class="form-label" for="psychosis-level">Psychosis drift</label>
+            <input id="psychosis-level" type="range" min="0" max="100" value="25" />
+            <span class="form-readout" id="psychosis-value">25%</span>
+          </div>
+          <div class="form-actions">
+            <button class="btn-primary" id="apply-live-control" type="button"><span class="btn-icon" aria-hidden="true">▶</span>Apply prompt and start live audio</button>
+            <button class="btn-secondary" id="play-archive" type="button"><span class="btn-icon" aria-hidden="true">●</span>Play latest archived recording</button>
+            <span class="save-status" id="live-control-status" role="status"></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="live-audio-title">
+        <div class="panel-bar">
+          <span class="panel-title" id="live-audio-title">Live Audio</span>
+          <span class="panel-meta">
+            <span class="meta-pair"><span class="meta-key">BPM</span><span class="meta-value" id="meta-bpm">—</span></span>
+            <span class="meta-pair"><span class="meta-key">KEY</span><span class="meta-value" id="meta-key">—</span></span>
+          </span>
+        </div>
+        <div class="panel-body">
+          <p class="hint" id="live-status">Enter a prompt, then start the live stream. If the conductor is prebuffering, this area will show how many sections remain.</p>
+          <div class="audio-shell"><audio id="player" controls preload="auto" playsinline></audio></div>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="band-title">
+        <div class="panel-bar"><span class="panel-title" id="band-title">Ensemble</span></div>
+        <div class="panel-body band" id="band"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="personas-title">
+        <details class="collapsible">
+          <summary class="panel-bar"><span class="caret" aria-hidden="true">▸</span><span class="panel-title" id="personas-title">Personas and prompts</span></summary>
+          <div class="panel-body">
+            <p class="hint">Texture is the ambient glue: pads, drones, shimmer, and slow color so the band does not sound like dry MIDI. Edits are saved to <code>public/personas.json</code>.</p>
+            <div class="persona-list" id="persona-list"></div>
+            <div class="form-actions">
+              <button class="btn-secondary" id="save-personas" type="button">Save personas</button>
+              <span class="save-status" id="personas-status" role="status"></span>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <section class="panel" aria-labelledby="current-session-title">
+        <details class="collapsible" open>
+          <summary class="panel-bar"><span class="caret" aria-hidden="true">▸</span><span class="panel-title" id="current-session-title">Current stream recording</span></summary>
+          <div class="panel-body">
+            <p class="hint" id="current-session-status">A single growing recording from the active generator session appears here.</p>
+            <div class="current-session-list" id="current-session-list"></div>
+          </div>
+        </details>
+      </section>
+
+      <section class="panel" aria-labelledby="archive-title">
+        <div class="panel-bar"><span class="panel-title" id="archive-title">Previous generated runs</span></div>
+        <div class="panel-body">
+          <p class="hint">Every generator run is archived as an MP3 plus MIDI/WAV/state files.</p>
+          <div class="archive-list" id="archive-list"></div>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script>
+      const streamUrl = "../public/stream/index.m3u8";
+      const recordingFallbackUrl = "../public/recordings/dummy-live-recording.mp3";
+      const player = document.getElementById("player");
+      const status = document.getElementById("live-status");
+      const startButton = document.getElementById("apply-live-control");
+      const archiveButton = document.getElementById("play-archive");
+      const livePrompt = document.getElementById("live-prompt");
+      const psychosisLevel = document.getElementById("psychosis-level");
+      const psychosisValue = document.getElementById("psychosis-value");
+      const liveControlStatus = document.getElementById("live-control-status");
+      const personasStatus = document.getElementById("personas-status");
+      const llmLight = document.getElementById("llm-light");
+      const llmStatus = document.getElementById("llm-status");
+      const llmStatusButton = document.getElementById("check-llm-status");
+      const llmMetaMode = document.getElementById("llm-meta-mode");
+      const llmMetaSource = document.getElementById("llm-meta-source");
+      const llmMetaSession = document.getElementById("llm-meta-session");
+      const llmMetaSync = document.getElementById("llm-meta-sync");
+      const metaBpm = document.getElementById("meta-bpm");
+      const metaKey = document.getElementById("meta-key");
+      const sysClock = document.getElementById("sys-clock");
+      const sysDate = document.getElementById("sys-date");
+
+      let currentPersonas = {};
+      let hlsReady = false;
+      let hlsInstance = null;
+      let lastConductorStatus = null;
+      let latestArchiveRecording = recordingFallbackUrl;
+      player.src = recordingFallbackUrl;
+
+      function escapeHtml(value) {
+        return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
+      }
+
+      function setStatus(element, message, isError) {
+        element.textContent = message;
+        element.className = isError ? "save-status error" : "save-status";
+      }
+
+      function postJson(url, payload) {
+        return fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) })
+          .then((response) => response.json().then((body) => {
+            if (!response.ok || body.ok === false) { throw new Error(body.error || "Request failed with status " + response.status); }
+            return body;
+          }));
+      }
+
+      function tickClock() {
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2, "0");
+        const mm = String(now.getMinutes()).padStart(2, "0");
+        const ss = String(now.getSeconds()).padStart(2, "0");
+        sysClock.textContent = hh + ":" + mm + ":" + ss;
+        const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+        sysDate.textContent = months[now.getMonth()] + " " + String(now.getDate()).padStart(2, "0") + " " + now.getFullYear();
+      }
+      tickClock();
+      window.setInterval(tickClock, 1000);
+
+      function renderLlmStatus(result) {
+        llmLight.classList.toggle("connected", Boolean(result.connected));
+        const prefix = result.connected ? "LLM connected" : "LLM not connected";
+        const serverKeyNote = result.server_has_openai_api_key
+          ? "Control server has OPENAI_API_KEY."
+          : "Control server does not have OPENAI_API_KEY; this is OK if the conductor terminal has it.";
+        llmStatus.textContent = prefix + ": " + result.message + " " + serverKeyNote;
+        llmMetaMode.textContent = (result.agent_mode || "—").toString().toUpperCase();
+        llmMetaSource.textContent = (result.source || "—").toString().toUpperCase();
+      }
+
+      function checkLlmStatus() {
+        llmStatusButton.disabled = true;
+        llmStatus.textContent = "Checking LLM status…";
+        return fetch("/api/llm-status", { cache: "no-store" })
+          .then((response) => response.json().then((body) => {
+            if (!response.ok || body.ok === false) { throw new Error(body.error || "Request failed with status " + response.status); }
+            return body;
+          }))
+          .then(renderLlmStatus)
+          .catch((error) => { llmLight.classList.remove("connected"); llmStatus.textContent = "LLM not connected: " + error.message; })
+          .finally(() => { llmStatusButton.disabled = false; });
+      }
+
+      function playRecordingFallback(reason) {
+        if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
+        hlsReady = false;
+        player.src = latestArchiveRecording;
+        player.load();
+        status.textContent = reason + " Playing the latest archived MP3.";
+        status.className = "hint";
+        player.play().catch((error) => {
+          status.textContent = "Could not start archived recording: " + error.message + ". Try one of the archived players below.";
+          status.className = "error";
+        });
+      }
+
+      function waitForNativeCanPlay(timeoutMs) {
+        if (timeoutMs === undefined) { timeoutMs = 20000; }
+        return new Promise((resolve, reject) => {
+          const timeoutId = window.setTimeout(() => { cleanup(); reject(new Error("Timed out waiting for live audio to buffer.")); }, timeoutMs);
+          function cleanup() { window.clearTimeout(timeoutId); player.removeEventListener("canplay", handleCanPlay); player.removeEventListener("error", handleError); }
+          function handleCanPlay() { cleanup(); resolve(); }
+          function handleError() { cleanup(); reject(new Error(player.error ? (player.error.message || "Audio element rejected the live source.") : "Audio element rejected the live source.")); }
+          player.addEventListener("canplay", handleCanPlay, { once: true });
+          player.addEventListener("error", handleError, { once: true });
+        });
+      }
+
+      function attachLiveStream() {
+        hlsReady = false;
+        if (player.canPlayType("application/vnd.apple.mpegurl")) {
+          player.src = streamUrl + "?v=" + Date.now();
+          player.load();
+          return waitForNativeCanPlay().then(() => { hlsReady = true; });
+        }
+        if (!window.Hls || !window.Hls.isSupported()) {
+          return Promise.reject(new Error("This browser cannot play HLS directly and hls.js is unavailable."));
+        }
+        if (hlsInstance) { hlsInstance.destroy(); }
+        return new Promise((resolve, reject) => {
+          let settled = false;
+          const timeoutId = window.setTimeout(() => { fail(new Error("Timed out waiting for HLS segments to buffer.")); }, 25000);
+          function succeed() { if (settled) return; settled = true; window.clearTimeout(timeoutId); hlsReady = true; resolve(); }
+          function fail(error) { if (settled) return; settled = true; window.clearTimeout(timeoutId); hlsReady = false; reject(error); }
+          hlsInstance = new window.Hls({ defaultAudioCodec: "mp4a.40.2", initialLiveManifestSize: 2 });
+          hlsInstance.on(window.Hls.Events.FRAG_BUFFERED, succeed);
+          player.addEventListener("canplay", succeed, { once: true });
+          hlsInstance.on(window.Hls.Events.ERROR, (_event, data) => {
+            if (data.fatal) {
+              const message = data.details ? "HLS error: " + data.details : "Fatal HLS error while loading live audio.";
+              if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
+              fail(new Error(message));
+            }
+          });
+          hlsInstance.loadSource(streamUrl + "?v=" + Date.now());
+          hlsInstance.attachMedia(player);
+        });
+      }
+
+      function waitForLiveReady(maxAttempts) {
+        if (maxAttempts === undefined) { maxAttempts = 30; }
+        let attempts = 0;
+        return new Promise((resolve, reject) => {
+          function check() {
+            attempts += 1;
+            fetch("../public/conductor-status.json", { cache: "no-store" })
+              .then((response) => response.ok ? response.json() : null)
+              .then((conductor) => {
+                lastConductorStatus = conductor;
+                renderConductorStatus(conductor);
+                if (conductor && conductor.live_ready) { resolve(conductor); return; }
+                const remaining = conductor ? (conductor.sections_until_live || 0) : "unknown";
+                status.textContent = "Waiting for live prebuffer… " + remaining + " section(s) remaining before audio starts.";
+                status.className = "hint";
+                if (attempts >= maxAttempts) { reject(new Error("Live stream is still prebuffering. Try again in a moment.")); return; }
+                window.setTimeout(check, 2000);
+              })
+              .catch(() => {
+                if (attempts >= maxAttempts) { reject(new Error("Could not read conductor status. Make sure segment_conductor.py is running.")); return; }
+                window.setTimeout(check, 2000);
+              });
+          }
+          check();
+        });
+      }
+
+      function startLiveAudioAfterPrompt() {
+        startButton.disabled = true;
+        setStatus(liveControlStatus, "Applying prompt…", false);
+        status.textContent = "Applying prompt before starting live audio…";
+        status.className = "hint";
+        return postJson("/api/live-control", { prompt: livePrompt.value, psychosis_level: Number(psychosisLevel.value) / 100 })
+          .then((result) => {
+            renderLiveControl(result.live_control);
+            const effectText = result.live_control.next_effect || "The prompt is queued for the next generated section.";
+            setStatus(liveControlStatus, "Prompt confirmed. " + effectText + ".", false);
+            return Promise.all([checkLlmStatus(), waitForLiveReady()]);
+          })
+          .then(() => { status.textContent = "Live buffer is ready. Loading live audio…"; return attachLiveStream(); })
+          .then(() => player.play())
+          .then(() => { status.textContent = "Live audio is playing from the prompted stream."; status.className = "hint"; })
+          .catch((error) => {
+            status.textContent = error.message + " Live audio was not started; use the archive button only if you want prerecorded fallback.";
+            status.className = "error";
+            setStatus(liveControlStatus, error.message, true);
+          })
+          .finally(() => { startButton.disabled = false; });
+      }
+
+      psychosisLevel.addEventListener("input", () => { psychosisValue.textContent = psychosisLevel.value + "%"; });
+      startButton.addEventListener("click", startLiveAudioAfterPrompt);
+      archiveButton.addEventListener("click", () => playRecordingFallback("Manual fallback selected."));
+
+      document.getElementById("save-personas").addEventListener("click", () => {
+        const nextPersonas = Object.assign({}, currentPersonas);
+        document.querySelectorAll("[data-persona-prompt]").forEach((textarea) => {
+          const role = textarea.getAttribute("data-role");
+          nextPersonas[role] = Object.assign({}, nextPersonas[role], { prompt: textarea.value });
+        });
+        setStatus(personasStatus, "Saving…", false);
+        postJson("/api/personas", nextPersonas)
+          .then((result) => { currentPersonas = result.personas; setStatus(personasStatus, "Saved to public/personas.json.", false); })
+          .catch((error) => setStatus(personasStatus, error.message, true));
+      });
+
+      llmStatusButton.addEventListener("click", checkLlmStatus);
+      checkLlmStatus();
+
+      function renderLiveControl(control) {
+        const prompt = control.prompt || "No live prompt set yet.";
+        const level = Math.round((control.psychosis_level || 0) * 100);
+        document.getElementById("live-control-current").textContent =
+          "Current mode: Custom";
+        livePrompt.value = prompt;
+        psychosisLevel.value = String(level);
+        psychosisValue.textContent = level + "%";
+      }
+
+      function renderConductorStatus(conductor) {
+        const conductorStatus = document.getElementById("conductor-status");
+        if (!conductor) {
+          conductorStatus.textContent = "Conductor status: not running. Prompt changes apply to the next generated form.";
+          llmMetaSession.textContent = "OFFLINE";
+          llmMetaSync.textContent = "—";
+          return;
+        }
+        llmMetaSession.textContent = (conductor.session_id || "—").toString().toUpperCase();
+        if (!conductor.live_ready) {
+          llmMetaSync.textContent = "BUF " + (conductor.buffered_sections || 0) + "/" + (conductor.prebuffer_sections || 0);
+          conductorStatus.textContent = "Conductor status: prebuffering \u00b7 " + (conductor.buffered_sections || 0) + "/" + (conductor.prebuffer_sections || 0) + " sections ready \u00b7 wait " + (conductor.sections_until_live || 0) + " more section(s) before starting live audio.";
+          return;
+        }
+        llmMetaSync.textContent = "SEC " + (conductor.section_index || 0);
+        const promptEta = Number.isInteger(conductor.prompt_sections_until_heard)
+          ? "current prompt audible in about " + conductor.prompt_sections_until_heard + " buffered section(s)"
+          : "current prompt will be generated next";
+        conductorStatus.textContent = "Conductor status: " + conductor.status + " \u00b7 section " + conductor.section_index + " \u00b7 buffer " + (conductor.buffered_sections || 0) + "/" + (conductor.prebuffer_sections || 0) + " \u00b7 next boundary in " + conductor.next_section_eta_seconds + "s \u00b7 " + promptEta + " \u00b7 last applied: \u201C" + (conductor.last_applied_prompt || "none yet") + "\u201D";
+      }
+
+      function refreshConductorStatus() {
+        fetch("../public/conductor-status.json", { cache: "no-store" })
+          .then((response) => response.ok ? response.json() : null)
+          .then(renderConductorStatus)
+          .catch(() => renderConductorStatus(null));
+      }
+
+      fetch("../public/live-control.json", { cache: "no-store" })
+        .then((response) => response.ok ? response.json() : null)
+        .then((control) => { if (control) { renderLiveControl(control); } });
+      refreshConductorStatus();
+      window.setInterval(refreshConductorStatus, 2000);
+
+      function renderCurrentSession(session) {
+        const sessionList = document.getElementById("current-session-list");
+        const sessionStatus = document.getElementById("current-session-status");
+        const minutes = Math.max(1, Math.round(session.duration_seconds / 60));
+        sessionStatus.textContent = session.title + " \u00b7 about " + minutes + " minute(s) captured \u00b7 updates every " + Math.max(1, Math.round(session.chunk_seconds / 60)) + " minute(s).";
+        if (!session.recording) {
+          sessionList.innerHTML = "<p class=\"hint\">No saved current-stream recording yet. Keep the generator running; the first playable recording appears after the first chunk closes.</p>";
+          return;
+        }
+        sessionList.innerHTML =
+          "<article class=\"session-chunk\">" +
+            "<h3>Current stream recording</h3>" +
+            "<p>Updated " + escapeHtml(session.updated_at) + ". Internal chunks saved: " + session.chunks.length + ".</p>" +
+            "<audio controls preload=\"metadata\" src=\"" + session.recording + "?v=" + encodeURIComponent(session.updated_at) + "\"></audio>" +
+          "</article>";
+      }
+
+      function refreshCurrentSession() {
+        fetch("../public/current-session.json", { cache: "no-store" })
+          .then((response) => response.ok ? response.json() : null)
+          .then((session) => { if (session) { renderCurrentSession(session); } })
+          .catch(() => { document.getElementById("current-session-list").innerHTML = "<p class=\"hint\">No active current-stream session yet.</p>"; });
+      }
+
+      refreshCurrentSession();
+      window.setInterval(refreshCurrentSession, 10000);
+
+      function renderState(state) {
+        if (!state || !Array.isArray(state.roles)) return;
+        const band = document.getElementById("band");
+        band.innerHTML = state.roles.map((role) =>
+          "<article class=\"role-card " + escapeHtml(role) + "\">" +
+            "<div class=\"role-head\">" +
+              "<span class=\"pulse\" aria-hidden=\"true\"></span>" +
+              "<span class=\"role-name\">" + escapeHtml(role) + "</span>" +
+            "</div>" +
+            "<div class=\"role-status\">" + escapeHtml(state.status[role] || "—") + "</div>" +
+            "<div class=\"role-line\">" + state.tempo_bpm + " bpm \u00b7 " + escapeHtml(state.key) + "</div>" +
+          "</article>").join("");
+        if (state.tempo_bpm) metaBpm.textContent = state.tempo_bpm;
+        if (state.key) metaKey.textContent = state.key;
+      }
+
+      function refreshState() {
+        fetch("../public/stream/state.json", { cache: "no-store" })
+          .then((response) => response.ok ? response.json() : null)
+          .then(renderState)
+          .catch(() => {});
+      }
+      refreshState();
+      window.setInterval(refreshState, 5000);
+
+      fetch("../public/archive/index.json")
+        .then((response) => response.ok ? response.json() : [])
+        .then((runs) => {
+          const archiveList = document.getElementById("archive-list");
+          if (!runs.length) {
+            archiveList.innerHTML = "<p class=\"hint\">No archived runs yet. Run the generator once to create one.</p>";
+            return;
+          }
+          latestArchiveRecording = runs[0].recording;
+          archiveList.innerHTML = runs.map((run) =>
+            "<article class=\"archive-item\">" +
+              "<h3>" + escapeHtml(run.title) + "</h3>" +
+              "<p>" + run.tempo_bpm + " bpm \u00b7 " + escapeHtml(run.key) + " \u00b7 " + run.roles.map(escapeHtml).join(", ") + "</p>" +
+              "<audio controls preload=\"metadata\" src=\"" + run.recording + "\"></audio>" +
+              "<p><a href=\"" + run.midi + "\">MIDI</a> \u00b7 <a href=\"" + run.wav + "\">WAV</a> \u00b7 <a href=\"" + run.state + "\">state.json</a></p>" +
+            "</article>").join("");
+        });
+
+      fetch("../public/personas.json")
+        .then((response) => response.json())
+        .then((personas) => {
+          currentPersonas = personas;
+          const personaList = document.getElementById("persona-list");
+          personaList.innerHTML = Object.entries(personas).map(([role, persona]) =>
+            "<article class=\"persona-item\">" +
+              "<h3>" + escapeHtml(persona.label) + "</h3>" +
+              "<p>" + escapeHtml(persona.purpose) + "</p>" +
+              "<details class=\"prompt-panel\">" +
+                "<summary>Edit " + escapeHtml(persona.label) + " prompt</summary>" +
+                "<textarea data-persona-prompt data-role=\"" + escapeHtml(role) + "\" aria-label=\"" + escapeHtml(persona.label) + " prompt\">" + escapeHtml(persona.prompt) + "</textarea>" +
+              "</details>" +
+            "</article>").join("");
+        });
+    </script>
+  </body>
+</html>
