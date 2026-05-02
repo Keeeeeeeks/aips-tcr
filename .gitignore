@@ -1,0 +1,35 @@
+# Local secrets and environment
+.env
+.env.*
+!.env.example
+
+# Python / tooling caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Private runtime state
+.aips-state/
+public/radio-state/*
+!public/radio-state/.gitkeep
+
+# Generated audio/media artifacts. Hetzner should own these in production.
+public/archive/*
+!public/archive/.gitkeep
+public/recordings/*
+!public/recordings/.gitkeep
+public/sessions/*
+!public/sessions/.gitkeep
+public/stream/*
+!public/stream/.gitkeep
+public/live-qa/*
+public/oracle-live/*
+public/stream_qa_*/
+public/current-session.json
+public/conductor-status.json
+
+# Local soundfonts can be large and license-sensitive.
+*.sf2
+*.sf3

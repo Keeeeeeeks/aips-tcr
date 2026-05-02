@@ -203,13 +203,23 @@ Admin auth is password-based: set `ADMIN_PASSWORD` or `ADMIN_SECRET` in the depl
 
 Persistent radio state is private server state, not frontend content. Set `AIPS_STATE_DIR=/var/lib/aips/radio-state` (or another path outside the web root) for production. The local fallback is `.aips-state/radio-state`, and both the Python server and nginx example deny legacy `/public/radio-state/` and `/.aips-state/` URLs defensively.
 
+Generated songs are media artifacts, not source files. Production should store them outside the repo, for example:
+
+```bash
+AIPS_ARCHIVE_DIR=/var/lib/aips/media/archive
+AIPS_RECORDINGS_DIR=/var/lib/aips/media/recordings
+AIPS_SESSIONS_DIR=/var/lib/aips/media/sessions
+```
+
+The archive JSON still advertises stable public URLs such as `/public/archive/<run>/recording.mp3`; nginx maps those URLs to `/var/lib/aips/media/...`, and the Vercel frontend prefixes them with `mediaBaseUrl`. This keeps old songs on Hetzner while `.gitignore` prevents generated archives, recordings, sessions, stream files, private state, and soundfonts from being committed or uploaded with the source bundle.
+
 ## Hetzner + Vercel deployment shape
 
 Vercel can serve the static frontend. Hetzner should run the stateful pieces: `scripts/control_server.py`, `scripts/segment_conductor.py`, FFmpeg/FluidSynth rendering, HLS/media serving, and archive storage. Example systemd units and nginx config live in `deploy/hetzner/`.
 
 HLS segments should be served by nginx or an equivalent static file server from the conductor output directory. The Python backend owns state and control APIs.
 
-The nginx example redirects HTTP to HTTPS, denies radio-state URLs, and the systemd units set secure-cookie mode plus `/var/lib/aips/radio-state` for private state. It also adds media CORS headers on `/public/stream/`, `/public/archive/`, `/public/recordings/`, and `/public/sessions/` so a Vercel page using `mediaBaseUrl` can load HLS playlists, TS segments, MP3s, and archive files from Hetzner. Replace the placeholder certificate paths, domain, and `https://your-vercel-app.vercel.app` origin before deploying.
+The nginx example redirects HTTP to HTTPS, denies radio-state URLs, serves permanent archives/recordings/sessions from `/var/lib/aips/media`, and the systemd units set secure-cookie mode plus `/var/lib/aips/radio-state` for private state. It also adds media CORS headers on `/public/stream/`, `/public/archive/`, `/public/recordings/`, and `/public/sessions/` so a Vercel page using `mediaBaseUrl` can load HLS playlists, TS segments, MP3s, and archive files from Hetzner. Replace the placeholder certificate paths, domain, and `https://your-vercel-app.vercel.app` origin before deploying.
 
 ## Archive model
 

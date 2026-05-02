@@ -40,7 +40,7 @@ def paths(root: Path) -> RadioPaths:
         "root": root,
         "public": public,
         "state_dir": state_root,
-        "archive_index": public / "archive" / "index.json",
+        "archive_index": Path(os.environ.get("AIPS_ARCHIVE_DIR", public / "archive")) / "index.json",
     }
 
 

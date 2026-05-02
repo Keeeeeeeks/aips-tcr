@@ -1180,6 +1180,14 @@ def archive_run(output_dir: Path, recording_path: Path, archive_root: Path) -> A
     return entry
 
 
+def archive_root_for(public_root: Path) -> Path:
+    return Path(os.environ.get("AIPS_ARCHIVE_DIR", public_root / "archive"))
+
+
+def recording_root_for(public_root: Path) -> Path:
+    return Path(os.environ.get("AIPS_RECORDINGS_DIR", public_root / "recordings"))
+
+
 def create_hls(wav_path: Path, stream_dir: Path, live_duration_seconds: int) -> None:
     ffmpeg = shutil.which("ffmpeg")
     if not ffmpeg:
@@ -1410,8 +1418,8 @@ def main() -> None:
     wav_path = output_dir / "ensemble.wav"
     midi_path = output_dir / "ensemble.mid"
     manifest_path = output_dir / "state.json"
-    recording_path = public_root / "recordings" / "dummy-live-recording.mp3"
-    archive_root = public_root / "archive"
+    recording_path = recording_root_for(public_root) / "dummy-live-recording.mp3"
+    archive_root = archive_root_for(public_root)
 
     write_midi(events, midi_path, live_control)
     midi_events = parse_generated_midi(midi_path)

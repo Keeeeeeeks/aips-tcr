@@ -19,7 +19,9 @@ import role_agents
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ARCHIVE_ROOT = ROOT / "public" / "archive"
+PUBLIC = ROOT / "public"
+ARCHIVE_ROOT = Path(os.environ.get("AIPS_ARCHIVE_DIR", PUBLIC / "archive"))
+SESSIONS_ROOT = Path(os.environ.get("AIPS_SESSIONS_DIR", PUBLIC / "sessions"))
 
 
 def archive_conductor_session(
@@ -86,7 +88,6 @@ def archive_conductor_session(
     archive_index.insert(0, entry)
     write_json(index_path, archive_index)
     return entry
-PUBLIC = ROOT / "public"
 STREAM_DIR = PUBLIC / "stream"
 
 
@@ -215,6 +216,10 @@ def write_current_session(session_dir: Path, session_id: str, sections: list[Sec
     }
     write_json(session_dir / "index.json", payload)
     write_json(PUBLIC / "current-session.json", payload)
+    if session_dir.parent != PUBLIC / "sessions":
+        public_session_dir = PUBLIC / "sessions" / session_id
+        public_session_dir.mkdir(parents=True, exist_ok=True)
+        write_json(public_session_dir / "index.json", payload)
 
 
 def delete_section_files(section: SectionEntry) -> None:
@@ -403,7 +408,7 @@ def main() -> None:
     agent_mode = cast(str, args.agent_mode)
     soundfont_path = cast(str | None, args.soundfont)
     section_seconds = section_bars * dummy.BEATS_PER_BAR * dummy.SECONDS_PER_BEAT
-    session_dir = PUBLIC / "sessions" / session_id
+    session_dir = SESSIONS_ROOT / session_id
     session_dir.mkdir(parents=True, exist_ok=True)
     clean_stream_dir()
 

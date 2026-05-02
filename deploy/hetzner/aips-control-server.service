@@ -10,6 +10,9 @@ Environment=AIPS_COOKIE_SAMESITE=None
 Environment=AIPS_STATE_DIR=/var/lib/aips/radio-state
 Environment=AIPS_ALLOWED_ORIGINS=https://your-vercel-app.vercel.app
 Environment=AIPS_TRUSTED_PROXY_RANGES=127.0.0.1/32,::1/128
+Environment=AIPS_ARCHIVE_DIR=/var/lib/aips/media/archive
+Environment=AIPS_RECORDINGS_DIR=/var/lib/aips/media/recordings
+Environment=AIPS_SESSIONS_DIR=/var/lib/aips/media/sessions
 ExecStart=/usr/bin/python3 scripts/control_server.py --host 127.0.0.1 --port 8765
 Restart=always
 RestartSec=5
