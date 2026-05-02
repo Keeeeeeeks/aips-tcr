@@ -13,21 +13,19 @@ __pycache__/
 # Private runtime state
 .aips-state/
 .aips-state/*
-public/radio-state/
 public/radio-state/*
 !public/radio-state/.gitkeep
 
+# Local deployment templates/secrets live outside the app repo.
+deploy/hetzner/
+
 # Generated audio/media artifacts. Hetzner should own these in production.
-public/archive/
 public/archive/*
 !public/archive/.gitkeep
-public/recordings/
 public/recordings/*
 !public/recordings/.gitkeep
-public/sessions/
 public/sessions/*
 !public/sessions/.gitkeep
-public/stream/
 public/stream/*
 !public/stream/.gitkeep
 public/live-qa/

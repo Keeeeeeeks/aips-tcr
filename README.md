@@ -215,11 +215,11 @@ The archive JSON still advertises stable public URLs such as `/public/archive/<r
 
 ## Hetzner + Vercel deployment shape
 
-Vercel can serve the static frontend. Hetzner should run the stateful pieces: `scripts/control_server.py`, `scripts/segment_conductor.py`, FFmpeg/FluidSynth rendering, HLS/media serving, and archive storage. Example systemd units and nginx config live in `deploy/hetzner/`.
+Vercel can serve the static frontend. Hetzner should run the stateful pieces: `scripts/control_server.py`, `scripts/segment_conductor.py`, FFmpeg/FluidSynth rendering, HLS/media serving, and archive storage. Keep machine-specific systemd/nginx files outside the app commit; `deploy/hetzner/` is ignored so local server templates do not get pushed accidentally.
 
 HLS segments should be served by nginx or an equivalent static file server from the conductor output directory. The Python backend owns state and control APIs.
 
-The nginx example redirects HTTP to HTTPS, denies radio-state URLs, serves permanent archives/recordings/sessions from `/var/lib/aips/media`, and the systemd units set secure-cookie mode plus `/var/lib/aips/radio-state` for private state. It also adds media CORS headers on `/public/stream/`, `/public/archive/`, `/public/recordings/`, and `/public/sessions/` so a Vercel page using `mediaBaseUrl` can load HLS playlists, TS segments, MP3s, and archive files from Hetzner. Replace the placeholder certificate paths, domain, and `https://your-vercel-app.vercel.app` origin before deploying.
+Your nginx config should redirect HTTP to HTTPS, deny radio-state URLs, serve permanent archives/recordings/sessions from `/var/lib/aips/media`, and add media CORS headers on `/public/stream/`, `/public/archive/`, `/public/recordings/`, and `/public/sessions/` so a Vercel page using `mediaBaseUrl` can load HLS playlists, TS segments, MP3s, and archive files from Hetzner. Your systemd environment should set secure-cookie mode plus `/var/lib/aips/radio-state` for private state.
 
 ## Archive model
 
