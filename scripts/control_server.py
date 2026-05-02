@@ -12,12 +12,13 @@ import re
 import subprocess
 import sys
 import time
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any, cast
 from urllib.parse import urlparse
+from zoneinfo import ZoneInfo
 
 import radio_state
 
@@ -31,6 +32,9 @@ ROLE_BUNDLES_PATH = PUBLIC / "stream" / "role-bundles.json"
 PRESET_MODES_PATH = PUBLIC / "preset-modes.json"
 ROLE_KEYS = {"percussion", "bass", "piano", "lead", "texture"}
 SERVER_STARTED_AT = time.time()
+RADIO_TZ = ZoneInfo("America/New_York")
+RADIO_LIVE_START_HOUR = int(os.environ.get("AIPS_RADIO_LIVE_START_HOUR", "5"))
+RADIO_LIVE_END_HOUR = int(os.environ.get("AIPS_RADIO_LIVE_END_HOUR", "19"))
 _NET_CACHE: dict[str, float] = {"ts": 0.0, "bytes": 0.0}
 ADMIN_COOKIE = "aips_admin_session"
 VOTER_COOKIE = "aips_voter_id"
@@ -378,6 +382,48 @@ def check_llm_status() -> dict[str, object]:
     }
 
 
+def radio_window_status() -> dict[str, object]:
+    now = datetime.now(RADIO_TZ)
+    start = now.replace(hour=RADIO_LIVE_START_HOUR, minute=0, second=0, microsecond=0)
+    end = now.replace(hour=RADIO_LIVE_END_HOUR, minute=0, second=0, microsecond=0)
+    should_be_live = start <= now < end
+    next_transition = end if should_be_live else start
+    if next_transition <= now:
+        next_transition = next_transition + timedelta(days=1)
+
+    conductor = read_json_object(CONDUCTOR_STATUS_PATH) or {}
+    conductor_running = conductor.get("delivery_status") == "segment_conductor_running" and conductor.get("status") in {"prebuffering", "generating", "waiting"}
+    live_ready = conductor.get("live_ready") is True
+    if should_be_live and conductor_running and live_ready:
+        state = "live"
+        message = "Radio is live and the stream buffer is ready."
+    elif should_be_live and conductor_running:
+        state = "opening"
+        message = "Radio window is open; conductor is prebuffering audio."
+    elif should_be_live:
+        state = "opening"
+        message = "Radio window is open; start the backend conductor to go live."
+    else:
+        state = "offline"
+        message = "Radio is offline outside the 5:00 AM–7:00 PM EST broadcast window."
+
+    return {
+        "ok": True,
+        "state": state,
+        "should_be_live": should_be_live,
+        "timezone": "America/New_York",
+        "window_label": "5:00 AM–7:00 PM EST",
+        "now_eastern": now.isoformat(),
+        "next_transition_label": "closes at" if should_be_live else "opens at",
+        "next_transition_at_eastern": next_transition.strftime("%-I:%M %p %Z"),
+        "next_transition_seconds": max(0, int((next_transition - now).total_seconds())),
+        "conductor_running": conductor_running,
+        "live_ready": live_ready,
+        "session_id": conductor.get("session_id"),
+        "conductor_status": conductor.get("status"),
+        "message": message,
+    }
+
 def _read_cpu_pct() -> float:
     try:
         load = os.getloadavg()[0]
@@ -691,6 +737,9 @@ class ControlHandler(SimpleHTTPRequestHandler):
         if path == "/api/llm-status":
             self.send_json(HTTPStatus.OK, check_llm_status())
             return
+        if path == "/api/radio-status":
+            self.send_json(HTTPStatus.OK, radio_window_status())
+            return
         if path == "/api/sysinfo":
             self.send_json(HTTPStatus.OK, read_sysinfo())
             return
@@ -743,6 +792,8 @@ class ControlHandler(SimpleHTTPRequestHandler):
             preset_modes["ok"] = True
             self.send_json(HTTPStatus.OK, preset_modes)
             return
+        if path in {"/admin", "/admin/"}:
+            self.path = "/web/new/index.html"
         if path == "/":
             self.path = "/web/"
         super().do_GET()

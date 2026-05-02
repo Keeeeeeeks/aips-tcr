@@ -7,6 +7,7 @@ import argparse
 import json
 import math
 import os
+import signal
 import shutil
 import subprocess
 import time
@@ -90,6 +91,14 @@ def archive_conductor_session(
     write_json(index_path, archive_index)
     return entry
 STREAM_DIR = PUBLIC / "stream"
+stop_requested = False
+
+
+def request_stop(signum: int, frame: object) -> None:
+    global stop_requested
+    _ = signum
+    _ = frame
+    stop_requested = True
 
 
 class SectionEntry(TypedDict):
@@ -367,6 +376,8 @@ def apply_vote_winner_to_live_control(live_control: dummy.LiveControl) -> dummy.
 
 
 def main() -> None:
+    signal.signal(signal.SIGTERM, request_stop)
+    signal.signal(signal.SIGINT, request_stop)
     parser = argparse.ArgumentParser(description="Run a section-by-section AI ensemble conductor.")
     _ = parser.add_argument("--session-id", default="summit-demo")
     _ = parser.add_argument("--section-bars", default=4, type=int)
@@ -421,7 +432,7 @@ def main() -> None:
     section_index = 0
     print(f"Segment conductor running at {section_bars} bars / {section_seconds:.1f}s per section")
 
-    while max_sections <= 0 or section_index < max_sections:
+    while not stop_requested and (max_sections <= 0 or section_index < max_sections):
         live_control = dummy.read_live_control(PUBLIC)
         preset_modes = dummy.read_preset_modes(PUBLIC)
         dummy.apply_preset_modes_to_live_control(live_control, preset_modes)
@@ -539,7 +550,10 @@ def main() -> None:
 
         sleep_seconds = next_section_at - time.time()
         if live_ready and buffered_count > prebuffer_sections and sleep_seconds > 0:
-            time.sleep(sleep_seconds)
+            while sleep_seconds > 0 and not stop_requested:
+                nap = min(1.0, sleep_seconds)
+                time.sleep(nap)
+                sleep_seconds = next_section_at - time.time()
         section_index += 1
 
     final_control = dummy.read_live_control(PUBLIC)

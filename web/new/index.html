@@ -277,8 +277,17 @@
                   inset 0 -2px 4px rgba(0,0,0,0.6),
                   inset 0 1px 1px rgba(255,255,255,0.3);
     }
+    .orb.pending {
+      background:
+        radial-gradient(circle at 32% 28%, rgba(255,255,255,0.92), transparent 40%),
+        radial-gradient(circle at 50% 60%, #f59e0b, #78350f 80%);
+      box-shadow: 0 0 20px rgba(245,158,11,0.62),
+                  inset 0 -2px 4px rgba(0,0,0,0.6),
+                  inset 0 1px 1px rgba(255,255,255,0.3);
+    }
     .conn-line { font-size: 0.95rem; color: var(--silver-1); display: inline-flex; align-items: center; gap: 14px; flex-wrap: wrap; }
     .conn-line .verb.ok { color: var(--green-1); font-weight: 700; }
+    .conn-line .verb.warn { color: var(--amber-1); font-weight: 700; }
     .conn-line .verb.bad { color: #fca5a5; font-weight: 700; }
     .latency { color: var(--silver-2); font-family: var(--mono); font-size: 0.88rem; }
     .meta-row { margin-top: 14px; display: grid; grid-template-columns: repeat(3, 1fr) auto; gap: 10px; align-items: center; }
@@ -444,6 +453,7 @@
     .save-status { font-family: var(--mono); font-size: 0.85rem; color: var(--silver-2); }
     .save-status.error { color: #fca5a5; }
     .save-status.ok { color: var(--green-1); }
+    .admin-private[hidden] { display: none !important; }
 
     /* Live audio */
     .audio-status { display: flex; align-items: center; gap: 14px; font-family: var(--mono); font-size: 0.82rem; color: var(--silver-2); margin-bottom: 12px; flex-wrap: wrap; }
@@ -774,19 +784,68 @@
     /* Hidden default audio (we render our own transport) */
     audio.hidden-audio { display: none; }
 
+    .admin-only { display: none; }
+    body.admin-route .admin-only { display: block; }
+    body.admin-route .desk {
+      grid-template-columns: minmax(0, 860px);
+      justify-content: center;
+      max-width: 980px;
+    }
+    body.admin-route .rail-left,
+    body.admin-route .rail-right,
+    body.admin-route .stage > :not(.hero):not(.admin-only) { display: none; }
+    body.admin-route .hero { height: 118px; }
+
     /* Responsive */
     @media (max-width: 1100px) {
       .desk { grid-template-columns: 1fr; }
-      .rail-left, .rail-right { flex-direction: row; flex-wrap: wrap; padding-top: 0; }
-      .icon-btn { width: 118px; }
+      .rail-left {
+        position: sticky; top: 0; z-index: 20;
+        display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 8px; padding: 8px;
+        border-radius: 18px;
+        background: rgba(3, 7, 18, 0.82);
+        border: 1px solid rgba(170, 200, 220, 0.14);
+        backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      }
+      .rail-right { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding-top: 0; }
+      .icon-btn { width: auto; min-height: 64px; border-radius: 16px; padding: 8px 6px; }
       .system-online { margin: 0; }
       .meter-scale { display: none; }
     }
     @media (max-width: 720px) {
-      .band { grid-template-columns: repeat(2, 1fr); }
-      .audio-deck { grid-template-columns: 80px 1fr 60px; }
+      .desk { gap: 10px; padding: 10px 10px 32px; }
+      .rail-left { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+      .icon-btn { min-height: 54px; gap: 4px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 4px 12px rgba(0,0,0,0.42); }
+      .icon-btn .icon { font-size: 16px; }
+      .icon-btn .label { font-size: 8px; letter-spacing: 0.08em; }
+      .system-online { display: none; }
+      .rail-right { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .hero { height: 116px; overflow: hidden; }
+      .blob { opacity: 0.42; transform: scale(0.72); }
+      .wordmark { font-size: clamp(2.35rem, 15vw, 3.2rem); }
+      .tagline { width: min(92vw, 420px); bottom: 2px; font-size: 0.66rem; letter-spacing: 0.09em; text-align: center; }
+      .panel .window-body { padding: 14px 12px 16px; }
+      .llm-row, .itunes-player, .drift-row { grid-template-columns: 1fr; }
+      .llm-row .orb { justify-self: start; }
+      .btn { width: 100%; justify-content: center; padding-inline: 14px; }
+      .form-actions { gap: 10px; }
+      .band { grid-template-columns: 1fr; }
+      .audio-status .timer { margin-left: 0; }
+      .audio-deck { grid-template-columns: 1fr; }
+      .master { grid-template-columns: auto 1fr auto; text-align: left; justify-content: start; }
+      .spectrum-canvas { height: 76px; }
+      .meters { display: none; }
+      .transport { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      .transport .spacer { display: none; }
+      .tbtn, .tbtn.play, .sync-btn, .div-select, .tap-btn { width: 100%; min-height: 44px; }
       .meta-row { grid-template-columns: repeat(2, 1fr); }
       .meta-row .sync-bars { grid-column: span 2; justify-self: end; }
+      .preset-grid { grid-template-columns: 1fr; }
+      .preset-head { flex-direction: column; align-items: flex-start; }
+    }
+    @media (hover: hover) {
+      .icon-btn:hover, .btn:hover, .tbtn:hover, .preset-btn:hover { filter: brightness(1.08); }
     }
     @media (prefers-reduced-motion: reduce) {
       * { animation: none !important; transition: none !important; }
@@ -838,13 +897,13 @@
           <div class="blob r1"></div><div class="blob r2"></div><div class="blob r3"></div>
         </div>
         <h1 class="wordmark"> MuzAIk </h1>
-        <p class="tagline"> generative radio for artificial easy listening </p>
+        <p class="tagline"> generative radio for easy listening </p>
       </header>
 
-      <!-- LLM Connection -->
-      <section id="panel-llm" class="panel window glass active has-caret" role="region" aria-label="LLM Connection">
+      <!-- Radio Status -->
+      <section id="panel-llm" class="panel window glass active has-caret" role="region" aria-label="Radio Status">
         <div class="title-bar">
-          <div class="title-bar-text">LLM Connection</div>
+          <div class="title-bar-text">Radio Status</div>
           <div class="title-bar-controls">
             <button aria-label="Minimize"></button>
             <button aria-label="Maximize"></button>
@@ -855,14 +914,14 @@
           <div class="llm-row">
             <span class="orb" id="llm-orb" aria-hidden="true"></span>
             <span class="conn-line" id="llm-line">
-              <span class="verb bad" id="llm-verb">Disconnected</span>
-              <span id="llm-message">LLM status has not been checked yet.</span>
+              <span class="verb bad" id="llm-verb">Offline</span>
+              <span id="llm-message">Radio status has not been checked yet.</span>
               <span class="latency" id="llm-latency"></span>
             </span>
-            <button class="btn btn-secondary" id="btn-check-llm" type="button">Check LLM status</button>
+            <button class="btn btn-secondary" id="btn-check-llm" type="button">Check radio status</button>
           </div>
           <div class="meta-row">
-            <div class="meta-pill"><span class="key">MODEL</span>   <span class="val" id="meta-model">—</span></div>
+            <div class="meta-pill"><span class="key">WINDOW</span>   <span class="val" id="meta-model">5AM–7PM EST</span></div>
             <div class="meta-pill"><span class="key">SESSION</span> <span class="val" id="meta-session">—</span></div>
             <div class="meta-pill"><span class="key">SYNC</span>    <span class="val" id="meta-sync">—</span></div>
             <div class="sync-bars" aria-hidden="true" id="sync-bars">
@@ -895,13 +954,14 @@
       </section>
 
       <!-- Admin -->
-      <details class="strip" id="panel-admin">
+      <details class="strip admin-only" id="panel-admin" open>
         <summary>
           <span class="caret" aria-hidden="true">▶</span>
-          Admin controls
+          Admin route controls
           <span class="plus" aria-hidden="true">+</span>
         </summary>
         <div class="strip-body">
+          <p class="form-label">This page uses the same server-side admin session as the API. Enter the value generated with <code>openssl rand -base64 32</code> and stored as <code>ADMIN_PASSWORD</code> or <code>ADMIN_SECRET</code>.</p>
           <label class="form-label" for="admin-password">Admin password</label>
           <input id="admin-password" class="prompt-box" type="password" autocomplete="current-password" placeholder="ADMIN_PASSWORD from Hetzner .env" />
           <div class="form-actions">
@@ -909,22 +969,24 @@
             <button class="btn btn-secondary" id="btn-admin-logout" type="button">Logout</button>
             <span class="save-status" id="admin-status" role="status"></span>
           </div>
-          <label class="form-label" for="admin-round-json">Curate next vote round as JSON array of 2-4 options</label>
-          <textarea id="admin-round-json" class="prompt-box" placeholder='[{"id":"clairo","label":"Clairo","prompt":"78 bpm warm bedroom-pop intimacy","tempo_bpm":78,"key":"C major","psychosis_level":0.18}]'></textarea>
-          <div class="form-actions">
-            <button class="btn btn-secondary" id="btn-admin-save-round" type="button">Save vote round</button>
-            <span class="save-status" id="admin-round-status" role="status"></span>
+          <div class="admin-private" id="admin-private" hidden>
+            <label class="form-label" for="admin-round-json">Curate next vote round as JSON array of 2-4 options</label>
+            <textarea id="admin-round-json" class="prompt-box" placeholder='[{"id":"clairo","label":"Clairo","prompt":"78 bpm warm bedroom-pop intimacy","tempo_bpm":78,"key":"C major","psychosis_level":0.18}]'></textarea>
+            <div class="form-actions">
+              <button class="btn btn-secondary" id="btn-admin-save-round" type="button">Save vote round</button>
+              <span class="save-status" id="admin-round-status" role="status"></span>
+            </div>
+            <label class="form-label" for="admin-override-json">Backstage override JSON</label>
+            <textarea id="admin-override-json" class="prompt-box" placeholder='{"enabled":true,"prompt":"92 bpm warm stable house band","tempo_bpm":92,"key":"A minor","time_signature":"4/4","psychosis_level":0.2}'></textarea>
+            <div class="form-actions">
+              <button class="btn btn-secondary" id="btn-admin-save-override" type="button">Save override</button>
+              <button class="btn btn-secondary" id="btn-admin-clear-override" type="button">Clear override</button>
+              <button class="btn btn-secondary" id="btn-admin-force-fallback" type="button">Toggle archive fallback</button>
+              <span class="save-status" id="admin-override-status" role="status"></span>
+            </div>
+            <div class="session-list" id="admin-suggestions"></div>
+            <div class="session-list" id="collapse-metrics"></div>
           </div>
-          <label class="form-label" for="admin-override-json">Backstage override JSON</label>
-          <textarea id="admin-override-json" class="prompt-box" placeholder='{"enabled":true,"prompt":"92 bpm warm stable house band","tempo_bpm":92,"key":"A minor","time_signature":"4/4","psychosis_level":0.2}'></textarea>
-          <div class="form-actions">
-            <button class="btn btn-secondary" id="btn-admin-save-override" type="button">Save override</button>
-            <button class="btn btn-secondary" id="btn-admin-clear-override" type="button">Clear override</button>
-            <button class="btn btn-secondary" id="btn-admin-force-fallback" type="button">Toggle archive fallback</button>
-            <span class="save-status" id="admin-override-status" role="status"></span>
-          </div>
-          <div class="session-list" id="admin-suggestions"></div>
-          <div class="session-list" id="collapse-metrics"></div>
         </div>
       </details>
 
@@ -1218,7 +1280,16 @@
           <p class="form-label">2. How long before the style collapses?</p>
           <p class="form-label">3. How long can a human listen before the loop becomes aesthetically unstable?</p>
           <p class="form-label">Collapse is behavioral. If people stop tuning in, voting, or settle into believing the copy is close enough, the system has found its middle ground.</p>
-          <p class="form-label"><strong>Disclaimer:</strong> This experimental work is offered as parody, commentary, and research-oriented artistic expression. It is not affiliated with, sponsored by, endorsed by, or approved by any referenced artist, label, rights holder, or third party. All trademarks, copyrights, publicity rights, and related rights remain the property of their respective owners. No ownership, license, or transfer of rights is claimed or implied. The project is not intended to generate revenue, impersonate any artist, reproduce protected works, or violate applicable law.</p>
+          <details class="strip">
+            <summary>
+              <span class="caret" aria-hidden="true">▶</span>
+              Legal disclaimer
+              <span class="plus" aria-hidden="true">+</span>
+            </summary>
+            <div class="strip-body">
+              <p class="form-label"><strong>Disclaimer:</strong> This experimental work is offered as parody, commentary, and research-oriented artistic expression. It is not affiliated with, sponsored by, endorsed by, or approved by any referenced artist, label, rights holder, or third party. All trademarks, copyrights, publicity rights, and related rights remain the property of their respective owners. No ownership, license, or transfer of rights is claimed or implied. The project is not intended to generate revenue, impersonate any artist, reproduce protected works, or violate applicable law.</p>
+            </div>
+          </details>
         </div>
       </section>
 

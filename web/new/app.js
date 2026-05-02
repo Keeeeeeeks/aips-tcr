@@ -4,7 +4,8 @@
    (control_server + segment_conductor + generate_dummy_stream).
 
    Endpoints:
-     GET  /api/llm-status                (existing)
+      GET  /api/radio-status              (live-window + conductor status)
+      GET  /api/llm-status                (existing)
      GET  /api/sysinfo                   (new — added in control_server.py)
      GET  /public/conductor-status.json
      GET  /public/live-control.json
@@ -27,6 +28,7 @@
   /* -------- paths (relative to /web/new/index.html) -------- */
   const PATHS = {
     apiLlmStatus:    "/api/llm-status",
+    apiRadioStatus:  "/api/radio-status",
     apiSysinfo:      "/api/sysinfo",
     apiLiveControl:  "/api/live-control",
     apiPersonas:     "/api/personas",
@@ -36,6 +38,7 @@
     apiSuggestions:  "/api/suggestions",
     apiFallback:     "/api/fallback",
     apiAdminLogin:   "/api/admin/login",
+    apiAdminSession: "/api/admin/session",
     apiAdminLogout:  "/api/admin/logout",
     apiAdminVoteRound: "/api/admin/vote-round",
     apiAdminSuggestions: "/api/admin/suggestions",
@@ -113,6 +116,10 @@
       .then(r => r.ok ? r.json() : null)
       .catch(() => null);
   }
+  function bindClick(id, handler) {
+    const node = $(id);
+    if (node) node.addEventListener("click", handler);
+  }
 
   /* ------------------------------------------------------------------
    * STATE
@@ -134,7 +141,12 @@
     roleBundles: null,
     selectedVoteOption: null,
     selectedRoleVotes: {},
+    radioStatus: null,
   };
+
+  const IS_ADMIN_ROUTE = window.location.pathname.replace(/\/+$/, "") === "/admin";
+  document.body.classList.toggle("admin-route", IS_ADMIN_ROUTE);
+  document.body.classList.toggle("public-route", !IS_ADMIN_ROUTE);
 
   /* ------------------------------------------------------------------
    * SYSTEM TIME
@@ -203,49 +215,74 @@
   setInterval(refreshSysinfo, 2000);
 
   /* ------------------------------------------------------------------
-   * LLM CONNECTION (with measured latency)
+   * RADIO STATUS — scheduled 5AM-7PM America/New_York window
    * ----------------------------------------------------------------*/
-  function checkLlmStatus() {
-    const btn = $("btn-check-llm");
-    btn.disabled = true;
-    $("llm-message").textContent = "Checking LLM status…";
-    $("llm-latency").textContent = "";
-    const t0 = performance.now();
-    return fetch(PATHS.apiLlmStatus, { cache: "no-store", credentials: "include" })
-      .then(r => r.json().then(j => ({ ok: r.ok, body: j })))
-      .then(({ ok, body }) => {
-        const ms = Math.round(performance.now() - t0);
-        if (!ok || body.ok === false) throw new Error((body && body.error) || "Status check failed");
-        renderLlm(body, ms);
-      })
-      .catch(err => {
-        $("llm-orb").classList.remove("connected");
-        $("llm-verb").textContent = "Disconnected";
-        $("llm-verb").className = "verb bad";
-        $("llm-message").textContent = err.message;
-        $("llm-latency").textContent = "";
-      })
-      .finally(() => { btn.disabled = false; });
+  function fallbackRadioStatus() {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/New_York",
+      hour12: false,
+      hour: "2-digit",
+      minute: "2-digit",
+    }).formatToParts(new Date());
+    const values = {};
+    parts.forEach(part => { values[part.type] = part.value; });
+    const hour = Number(values.hour) || 0;
+    const minute = Number(values.minute) || 0;
+    const easternMinutes = hour * 60 + minute;
+    const shouldBeLive = easternMinutes >= 5 * 60 && easternMinutes < 19 * 60;
+    return {
+      ok: true,
+      should_be_live: shouldBeLive,
+      state: shouldBeLive ? "opening" : "offline",
+      message: shouldBeLive ? "Live window is open; waiting for backend status." : "Radio is offline outside the 5:00 AM–7:00 PM EST window.",
+      window_label: "5:00 AM–7:00 PM EST",
+      next_transition_label: shouldBeLive ? "closes at" : "opens at",
+      next_transition_at_eastern: shouldBeLive ? "7:00 PM EST" : "5:00 AM EST",
+      conductor_running: false,
+      live_ready: false,
+    };
   }
 
-  function renderLlm(result, latencyMs) {
+  function radioAllowsLive() {
+    return !state.radioStatus || state.radioStatus.should_be_live !== false;
+  }
+
+  function updateLiveActionState() {
+    const btn = $("btn-apply");
+    if (!btn) return;
+    const offline = state.radioStatus && state.radioStatus.should_be_live === false;
+    btn.disabled = !!offline;
+    btn.title = offline ? "Radio is offline outside the 5:00 AM–7:00 PM EST broadcast window." : "Apply the prompt and start live audio";
+  }
+
+  function refreshRadioStatus() {
+    const btn = $("btn-check-llm");
+    if (btn) btn.disabled = true;
+    $("llm-message").textContent = "Checking radio status…";
+    $("llm-latency").textContent = "";
+    return getJson(PATHS.apiRadioStatus)
+      .then(result => renderRadioStatus(result || fallbackRadioStatus()))
+      .finally(() => { if (btn) btn.disabled = false; });
+  }
+
+  function renderRadioStatus(result) {
+    state.radioStatus = result;
     const orb = $("llm-orb");
     const verb = $("llm-verb");
-    const isConn = !!result.connected;
-    const latestOk = !!result.latest_generation_connected;
-    orb.classList.toggle("connected", isConn);
-    verb.textContent = isConn ? (latestOk ? "Connected" : "LLM mode active") : "Disconnected";
-    verb.className = "verb " + (isConn ? "ok" : "bad");
-    $("llm-message").textContent = "— " + (result.message || "");
-    if (typeof latencyMs === "number") {
-      $("llm-latency").textContent = "latency " + latencyMs + " ms";
-    }
-    const mode = (result.agent_mode || "—").toString().toUpperCase();
-    const src = (result.source || "").toString().toUpperCase();
-    $("meta-model").textContent = src ? "ORCHESTRA-" + mode + " · " + src : "ORCHESTRA-" + mode;
+    const shouldBeLive = !!result.should_be_live;
+    const onAir = shouldBeLive && !!result.conductor_running && !!result.live_ready;
+    orb.classList.toggle("connected", onAir);
+    orb.classList.toggle("pending", shouldBeLive && !onAir);
+    verb.textContent = onAir ? "Live" : (shouldBeLive ? "Opening" : "Offline");
+    verb.className = "verb " + (onAir ? "ok" : (shouldBeLive ? "warn" : "bad"));
+    $("llm-message").textContent = "— " + (result.message || "Radio status unavailable.");
+    $("llm-latency").textContent = (result.next_transition_label || "next change") + " " + (result.next_transition_at_eastern || "—");
+    $("meta-model").textContent = result.window_label || "5:00 AM–7:00 PM EST";
+    updateLiveActionState();
   }
-  $("btn-check-llm").addEventListener("click", checkLlmStatus);
-  checkLlmStatus();
+  bindClick("btn-check-llm", refreshRadioStatus);
+  refreshRadioStatus();
+  setInterval(refreshRadioStatus, 30000);
 
   /* ------------------------------------------------------------------
    * CONDUCTOR STATUS — every 2s, drives sync%, hint lines, system orb
@@ -269,6 +306,22 @@
       const bufDot = $("buffer-dot");
       const bufText = $("buffer-text");
       const livePill = $("live-pill");
+      const scheduledLive = radioAllowsLive();
+
+      if (!scheduledLive) {
+        sysOrb.classList.add("offline");
+        sysLabel.innerHTML = "Radio<br/>Offline";
+        $("meta-session").textContent = "OFF AIR";
+        $("meta-sync").textContent = "—";
+        paintSync(0);
+        hintConductor.textContent = (state.radioStatus && state.radioStatus.message) || "Radio is offline outside the daily broadcast window.";
+        bufDot.classList.add("bad");
+        bufText.textContent = "Radio offline until the next 5:00 AM EST opening window";
+        livePill.textContent = "OFFLINE";
+        livePill.classList.add("idle");
+        state.isLive = false;
+        return;
+      }
 
       if (!c) {
         sysOrb.classList.add("offline");
@@ -407,7 +460,7 @@
   refreshVoteRound();
   setInterval(refreshVoteRound, 5000);
 
-  $("btn-submit-vote").addEventListener("click", () => {
+  bindClick("btn-submit-vote", () => {
     if (!state.selectedVoteOption) {
       setStatus($("vote-save-status"), "Pick a style first.", "error");
       return;
@@ -417,13 +470,13 @@
       .catch(err => setStatus($("vote-save-status"), err.message, "error"));
   });
 
-  $("btn-submit-suggestion").addEventListener("click", () => {
+  bindClick("btn-submit-suggestion", () => {
     postJson(PATHS.apiSuggestions, { text: $("suggestion-box").value })
       .then(result => { $("suggestion-box").value = ""; setStatus($("suggestion-status"), "Suggestion " + result.suggestion.status + ": " + result.suggestion.reason, "ok"); })
       .catch(err => setStatus($("suggestion-status"), err.message, "error"));
   });
 
-  $("drift").addEventListener("input", (e) => {
+  if ($("drift")) $("drift").addEventListener("input", (e) => {
     $("drift-readout").textContent = e.target.value + " %";
   });
 
@@ -562,6 +615,9 @@
   }
 
   function attachLiveStream() {
+    if (!radioAllowsLive()) {
+      return Promise.reject(new Error("Radio is offline outside the 5:00 AM–7:00 PM EST broadcast window."));
+    }
     destroyHls();
     state.isLive = true;
     if (audio.canPlayType("application/vnd.apple.mpegurl")) {
@@ -625,7 +681,11 @@
     });
   }
 
-  $("btn-apply").addEventListener("click", () => {
+  bindClick("btn-apply", () => {
+    if (!radioAllowsLive()) {
+      setStatus($("apply-status"), "Radio is offline outside the 5:00 AM–7:00 PM EST broadcast window.", "error");
+      return;
+    }
     const btn = $("btn-apply");
     btn.disabled = true;
     setStatus($("apply-status"), "Applying prompt…", null);
@@ -639,7 +699,7 @@
         ensureAudioGraph();
         if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
         setStatus($("apply-status"), "Prompt confirmed. Waiting for live buffer…", "ok");
-        return Promise.all([checkLlmStatus(), waitForLiveReady()]);
+        return Promise.all([refreshRadioStatus(), waitForLiveReady()]);
       })
       .then(() => attachLiveStream())
       .then(() => audio.play())
@@ -660,7 +720,7 @@
       .finally(() => { btn.disabled = false; });
   });
 
-  $("btn-archive").addEventListener("click", () => {
+  bindClick("btn-archive", () => {
     ensureAudioGraph();
     if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
     playRecording(state.latestArchiveRecording, "Manual fallback selected. Playing latest archived recording.")
@@ -670,7 +730,7 @@
   /* ------------------------------------------------------------------
    * TRANSPORT
    * ----------------------------------------------------------------*/
-  $("t-play").addEventListener("click", () => {
+  bindClick("t-play", () => {
     ensureAudioGraph();
     if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
     if (audio.paused) {
@@ -684,31 +744,31 @@
   audio.addEventListener("pause", () => { $("t-play").textContent = "▶"; });
   audio.addEventListener("ended", () => { $("t-play").textContent = "▶"; });
 
-  $("t-stop").addEventListener("click", () => {
+  bindClick("t-stop", () => {
     audio.pause();
     try { audio.currentTime = 0; } catch (_) { /* live HLS may reject */ }
     state.audioStartedAt = null;
   });
-  $("t-rew").addEventListener("click", () => {
+  bindClick("t-rew", () => {
     try { audio.currentTime = Math.max(0, audio.currentTime - 10); } catch (_) {}
   });
-  $("t-ff").addEventListener("click", () => {
+  bindClick("t-ff", () => {
     try { audio.currentTime = Math.min((audio.duration || 0) || audio.currentTime + 10, audio.currentTime + 10); } catch (_) {}
   });
-  $("t-skip-back").addEventListener("click", () => {
+  bindClick("t-skip-back", () => {
     try { audio.currentTime = Math.max(0, audio.currentTime - 30); } catch (_) {}
   });
-  $("t-skip-fwd").addEventListener("click", () => {
+  bindClick("t-skip-fwd", () => {
     try { audio.currentTime = audio.currentTime + 30; } catch (_) {}
   });
 
-  $("t-sync").addEventListener("click", (e) => {
+  bindClick("t-sync", (e) => {
     const cur = e.currentTarget.getAttribute("aria-pressed") === "true";
     e.currentTarget.setAttribute("aria-pressed", cur ? "false" : "true");
   });
 
   /* TAP TEMPO — last 4 taps in the past 3s → median interval → BPM */
-  $("t-tap").addEventListener("click", () => {
+  bindClick("t-tap", () => {
     const now = performance.now();
     state.tapTimes = state.tapTimes.filter(t => now - t < 3000);
     state.tapTimes.push(now);
@@ -997,17 +1057,36 @@
     });
   }
 
-  $("btn-admin-login").addEventListener("click", () => {
+  function setAdminUnlocked(unlocked) {
+    const privatePanel = $("admin-private");
+    if (privatePanel) privatePanel.hidden = !unlocked;
+  }
+
+  function refreshAdminSession() {
+    if (!IS_ADMIN_ROUTE) return Promise.resolve(false);
+    return getJson(PATHS.apiAdminSession).then(result => {
+      const unlocked = !!(result && result.admin);
+      setAdminUnlocked(unlocked);
+      if (unlocked) {
+        setStatus($("admin-status"), "Admin session active.", "ok");
+        return Promise.all([refreshAdminSuggestions(), refreshCollapseMetrics()]).then(() => true);
+      }
+      setStatus($("admin-status"), "Enter the admin value to unlock controls.", null);
+      return false;
+    });
+  }
+
+  bindClick("btn-admin-login", () => {
     postJson(PATHS.apiAdminLogin, { password: $("admin-password").value })
-      .then(() => { $("admin-password").value = ""; setStatus($("admin-status"), "Admin session active.", "ok"); return Promise.all([refreshAdminSuggestions(), refreshCollapseMetrics()]); })
+      .then(() => { $("admin-password").value = ""; setAdminUnlocked(true); setStatus($("admin-status"), "Admin session active.", "ok"); return Promise.all([refreshAdminSuggestions(), refreshCollapseMetrics()]); })
       .catch(err => setStatus($("admin-status"), err.message, "error"));
   });
-  $("btn-admin-logout").addEventListener("click", () => {
+  bindClick("btn-admin-logout", () => {
     postJson(PATHS.apiAdminLogout, {})
-      .then(() => setStatus($("admin-status"), "Logged out.", "ok"))
+      .then(() => { setAdminUnlocked(false); setStatus($("admin-status"), "Logged out.", "ok"); })
       .catch(err => setStatus($("admin-status"), err.message, "error"));
   });
-  $("btn-admin-save-round").addEventListener("click", () => {
+  bindClick("btn-admin-save-round", () => {
     let options;
     try { options = JSON.parse($("admin-round-json").value); }
     catch (err) { setStatus($("admin-round-status"), "Vote round JSON is invalid.", "error"); return; }
@@ -1015,7 +1094,7 @@
       .then(() => { setStatus($("admin-round-status"), "Vote round saved.", "ok"); return refreshVoteRound(); })
       .catch(err => setStatus($("admin-round-status"), err.message, "error"));
   });
-  $("btn-admin-save-override").addEventListener("click", () => {
+  bindClick("btn-admin-save-override", () => {
     let payload;
     try { payload = JSON.parse($("admin-override-json").value); }
     catch (err) { setStatus($("admin-override-status"), "Override JSON is invalid.", "error"); return; }
@@ -1023,17 +1102,18 @@
       .then(() => setStatus($("admin-override-status"), "Override saved.", "ok"))
       .catch(err => setStatus($("admin-override-status"), err.message, "error"));
   });
-  $("btn-admin-clear-override").addEventListener("click", () => {
+  bindClick("btn-admin-clear-override", () => {
     postJson(PATHS.apiAdminOverride, { enabled: false })
       .then(() => setStatus($("admin-override-status"), "Override cleared.", "ok"))
       .catch(err => setStatus($("admin-override-status"), err.message, "error"));
   });
-  $("btn-admin-force-fallback").addEventListener("click", () => {
+  bindClick("btn-admin-force-fallback", () => {
     getJson(PATHS.apiAdminFallback)
       .then(result => postJson(PATHS.apiAdminFallback, { enabled: !(result.fallback && result.fallback.enabled) }))
       .then(result => setStatus($("admin-override-status"), "Archive fallback " + (result.fallback.enabled ? "enabled" : "disabled") + ".", "ok"))
       .catch(err => setStatus($("admin-override-status"), err.message, "error"));
   });
+  refreshAdminSession();
 
   /* ------------------------------------------------------------------
    * PRESET MODES
@@ -1208,7 +1288,7 @@
     renderEffectivePersonaPrompts(state.presetModes);
   });
 
-  $("btn-save-personas").addEventListener("click", () => {
+  bindClick("btn-save-personas", () => {
     const next = Object.assign({}, state.personas);
     document.querySelectorAll("#persona-list textarea[data-role]").forEach(t => {
       const role = t.getAttribute("data-role");
