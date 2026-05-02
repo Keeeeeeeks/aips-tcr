@@ -142,6 +142,7 @@
     selectedVoteOption: null,
     selectedRoleVotes: {},
     radioStatus: null,
+    autoFallbackInProgress: false,
   };
 
   const IS_ADMIN_ROUTE = window.location.pathname.replace(/\/+$/, "") === "/admin";
@@ -279,6 +280,9 @@
     $("llm-latency").textContent = (result.next_transition_label || "next change") + " " + (result.next_transition_at_eastern || "—");
     $("meta-model").textContent = result.window_label || "5:00 AM–7:00 PM EST";
     updateLiveActionState();
+    if (state.isLive && shouldBeLive && !result.conductor_running) {
+      tryArchiveFallback("Live conductor stopped. Playing the archived stream.");
+    }
   }
   bindClick("btn-check-llm", refreshRadioStatus);
   refreshRadioStatus();
@@ -334,6 +338,7 @@
         bufText.textContent = "Conductor not running";
         livePill.textContent = "IDLE";
         livePill.classList.add("idle");
+        if (state.isLive) tryArchiveFallback("Live conductor status disappeared. Playing the latest archived stream.");
         state.isLive = false;
         return;
       }
@@ -640,6 +645,7 @@
         if (data.fatal) {
           clearTimeout(t);
           destroyHls();
+          tryArchiveFallback("Live stream ended. Playing the archived stream.");
           reject(new Error("HLS error: " + (data.details || "fatal")));
         }
       });
@@ -659,6 +665,24 @@
       $("buffer-text").textContent = label || "Playing archived recording";
       $("buffer-dot").classList.remove("bad");
     });
+  }
+
+  function tryArchiveFallback(label) {
+    if (state.autoFallbackInProgress) return Promise.resolve(false);
+    state.autoFallbackInProgress = true;
+    const fallbackLabel = label || "Live stream unavailable. Playing latest archived recording.";
+    return getJson(PATHS.apiFallback)
+      .then(fallback => {
+        const recording = fallback && fallback.recording ? mediaUrl(fallback.recording) : state.latestArchiveRecording;
+        if (!recording) return false;
+        return playRecording(recording, fallbackLabel).then(() => true);
+      })
+      .then(played => {
+        if (played) setStatus($("apply-status"), "Archive fallback playing.", "ok");
+        return played;
+      })
+      .catch(() => false)
+      .finally(() => { state.autoFallbackInProgress = false; });
   }
 
   /* ------------------------------------------------------------------
@@ -1005,22 +1029,26 @@
   /* ------------------------------------------------------------------
    * ARCHIVE
    * ----------------------------------------------------------------*/
-  getJson(PATHS.archiveIndex).then(runs => {
-    const list = $("archive-list");
-    if (!Array.isArray(runs) || !runs.length) {
-      list.innerHTML = '<p class="form-label">No archived runs yet. Run the generator once to create one.</p>';
-      return;
-    }
-    state.latestArchiveRecording = mediaUrl(runs[0].recording);
-    list.innerHTML = runs.map(run =>
-      '<article class="archive-item">' +
-        '<h3>' + escapeHtml(run.title || run.id) + '</h3>' +
-        '<p>' + (run.tempo_bpm || "—") + ' bpm · ' + escapeHtml(run.key || "—") + ' · ' + (run.roles || []).map(escapeHtml).join(", ") + '</p>' +
-        '<audio controls preload="metadata" src="' + escapeHtml(mediaUrl(run.recording)) + '"></audio>' +
-        '<p><a href="' + escapeHtml(mediaUrl(run.midi) || "#") + '">MIDI</a> · <a href="' + escapeHtml(mediaUrl(run.wav) || "#") + '">WAV</a> · <a href="' + escapeHtml(mediaUrl(run.state) || "#") + '">state.json</a></p>' +
-      '</article>'
-    ).join("");
-  });
+  function refreshArchive() {
+    return getJson(PATHS.archiveIndex).then(runs => {
+      const list = $("archive-list");
+      if (!Array.isArray(runs) || !runs.length) {
+        list.innerHTML = '<p class="form-label">No archived runs yet. Run the generator once to create one.</p>';
+        return;
+      }
+      state.latestArchiveRecording = mediaUrl(runs[0].recording);
+      list.innerHTML = runs.map(run =>
+        '<article class="archive-item">' +
+          '<h3>' + escapeHtml(run.title || run.id) + '</h3>' +
+          '<p>' + (run.tempo_bpm || "—") + ' bpm · ' + escapeHtml(run.key || "—") + ' · ' + (run.roles || []).map(escapeHtml).join(", ") + '</p>' +
+          '<audio controls preload="metadata" src="' + escapeHtml(mediaUrl(run.recording)) + '"></audio>' +
+          '<p><a href="' + escapeHtml(mediaUrl(run.midi) || "#") + '">MIDI</a> · <a href="' + escapeHtml(mediaUrl(run.wav) || "#") + '">WAV</a> · <a href="' + escapeHtml(mediaUrl(run.state) || "#") + '">state.json</a></p>' +
+        '</article>'
+      ).join("");
+    });
+  }
+  refreshArchive();
+  setInterval(refreshArchive, 30000);
 
   /* ------------------------------------------------------------------
    * ADMIN + COLLAPSE SIGNALS
