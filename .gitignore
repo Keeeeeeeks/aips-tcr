@@ -47,3 +47,5 @@ public/conductor-status.json
 
 docs/*
 docs/
+
+web/new/config.js

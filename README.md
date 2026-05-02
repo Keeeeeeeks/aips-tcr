@@ -1,6 +1,6 @@
-# The Chinese Room Radio / AI Ensemble
+# MuzAIk
 
-An open-source generative radio experiment by Resoworks for the AIPS Summit. The project is a meditation on the Chinese Room and on LLM systems as procedural imitations of understanding: one continuous symbolic MIDI ensemble stream, shaped by prompts, fixed-menu votes, and role-agent bundles.
+An open-source generative radio experiment by Resoworks for the AIPS Summit — Muzak refracted through AI. MuzAIk is a meditation on the Chinese Room and on LLM systems as procedural imitations of understanding: one continuous symbolic MIDI ensemble stream, shaped by prompts, fixed-menu votes, and role-agent bundles.
 
 ## What it builds
 

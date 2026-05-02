@@ -1,6 +1,6 @@
-/* AI Ensemble — Liquid Glass wired logic
+/* MuzAIk — Liquid Glass wired logic
    ---------------------------------------------------------------
-   Connects the Liquid Glass UI to the existing AI Ensemble backend
+   Connects the Liquid Glass UI to the existing MuzAIk backend
    (control_server + segment_conductor + generate_dummy_stream).
 
    Endpoints:
