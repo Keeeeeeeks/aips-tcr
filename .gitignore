@@ -33,3 +33,10 @@ public/conductor-status.json
 # Local soundfonts can be large and license-sensitive.
 *.sf2
 *.sf3
+
+
+.sisyphus/*
+.sisyphus/
+
+docs/*
+docs/
