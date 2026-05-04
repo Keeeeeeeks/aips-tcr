@@ -452,7 +452,7 @@
     $("vote-status").textContent = "Vote for the next generated section · " + (tally.total_votes || 0) + " vote(s) counted" + winnerLabel + etaCopy;
     optionsRoot.innerHTML = options.map(opt => {
       const count = (tally.counts && tally.counts[opt.id]) || 0;
-      return '<button class="preset-btn" type="button" data-vote-option="' + escapeHtml(opt.id) + '" aria-pressed="' + String(state.selectedVoteOption === opt.id) + '">' + escapeHtml(opt.label || opt.id) + ' · ' + count + '</button>';
+      return '<button class="preset-btn" type="button" name="vote-option-' + escapeHtml(opt.id) + '" data-vote-option="' + escapeHtml(opt.id) + '" aria-pressed="' + String(state.selectedVoteOption === opt.id) + '">' + escapeHtml(opt.label || opt.id) + ' · ' + count + '</button>';
     }).join("");
     optionsRoot.querySelectorAll("[data-vote-option]").forEach(btn => {
       btn.addEventListener("click", () => {
@@ -464,7 +464,7 @@
     roleRoot.innerHTML = Object.keys(ROLE_LABELS).map(role => {
       const selected = state.selectedRoleVotes[role] || "";
       const choices = Array.isArray(roleOptions[role]) && roleOptions[role].length ? roleOptions[role] : ["support", "foreground", "sparser"];
-      return '<label class="preset-toggle">' + escapeHtml(ROLE_LABELS[role]) + ' <select data-role-vote="' + escapeHtml(role) + '"><option value="">auto</option>' + choices.map(choice => {
+      return '<label class="preset-toggle" for="role-vote-' + escapeHtml(role) + '">' + escapeHtml(ROLE_LABELS[role]) + ' <select id="role-vote-' + escapeHtml(role) + '" name="role-vote-' + escapeHtml(role) + '" data-role-vote="' + escapeHtml(role) + '"><option value="">auto</option>' + choices.map(choice => {
         const value = typeof choice === "object" ? choice.id : choice;
         const label = typeof choice === "object" ? (choice.label || choice.id) : choice;
         return '<option value="' + escapeHtml(value) + '" ' + (selected === value ? 'selected' : '') + '>' + escapeHtml(label) + '</option>';
@@ -661,6 +661,7 @@
     }
     return new Promise((resolve, reject) => {
       const hls = new window.Hls({
+        enableWorker: false,
         defaultAudioCodec: "mp4a.40.2",
         initialLiveManifestSize: 2,
         xhrSetup: xhr => { xhr.withCredentials = false; },
@@ -1087,7 +1088,7 @@
       const root = $("admin-suggestions");
       if (!root || !result || !Array.isArray(result.suggestions)) return;
       root.innerHTML = result.suggestions.slice(0, 12).map(item =>
-        '<article class="session-chunk"><h3>' + escapeHtml(item.status || "pending") + ' suggestion</h3><p>' + escapeHtml(item.text || "") + '</p><p>' + escapeHtml(item.reason || "") + '</p><div class="form-actions"><button class="btn btn-secondary" data-suggestion-action="approved" data-suggestion-id="' + escapeHtml(item.id || "") + '" type="button">Approve</button><button class="btn btn-secondary" data-suggestion-action="rejected" data-suggestion-id="' + escapeHtml(item.id || "") + '" type="button">Reject</button><button class="btn btn-secondary" data-suggestion-promote="' + escapeHtml(item.id || "") + '" type="button">Promote</button></div></article>'
+        '<article class="session-chunk"><h3>' + escapeHtml(item.status || "pending") + ' suggestion</h3><p>' + escapeHtml(item.text || "") + '</p><p>' + escapeHtml(item.reason || "") + '</p><div class="form-actions"><button class="btn btn-secondary" name="suggestion-approve-' + escapeHtml(item.id || "") + '" data-suggestion-action="approved" data-suggestion-id="' + escapeHtml(item.id || "") + '" type="button">Approve</button><button class="btn btn-secondary" name="suggestion-reject-' + escapeHtml(item.id || "") + '" data-suggestion-action="rejected" data-suggestion-id="' + escapeHtml(item.id || "") + '" type="button">Reject</button><button class="btn btn-secondary" name="suggestion-promote-' + escapeHtml(item.id || "") + '" data-suggestion-promote="' + escapeHtml(item.id || "") + '" type="button">Promote</button></div></article>'
       ).join("") || '<p class="form-label">No suggestions yet.</p>';
       root.querySelectorAll("[data-suggestion-action]").forEach(btn => {
         btn.addEventListener("click", () => {
@@ -1240,12 +1241,12 @@
     grid.innerHTML = ids.map(id => {
       const p = presetModes.profiles[id];
       const pressed = IS_ADMIN_ROUTE ? presetModes.active_profile === id : state.selectedVoteOption === id;
-      return '<button class="preset-btn" type="button" data-preset-id="' + escapeHtml(id) + '" aria-pressed="' + String(pressed) + '">' + escapeHtml(p.label || id) + '</button>';
+      return '<button class="preset-btn" type="button" name="preset-' + escapeHtml(id) + '" data-preset-id="' + escapeHtml(id) + '" aria-pressed="' + String(pressed) + '">' + escapeHtml(p.label || id) + '</button>';
     }).join("");
 
     const activeRoles = presetModes.active_roles || {};
     toggles.innerHTML = IS_ADMIN_ROUTE ? Object.keys(ROLE_LABELS).map(role =>
-      '<label class="preset-toggle"><input type="checkbox" data-preset-role="' + escapeHtml(role) + '" ' + (activeRoles[role] !== false ? 'checked' : '') + '> ' + escapeHtml(ROLE_LABELS[role]) + '</label>'
+      '<label class="preset-toggle" for="preset-role-' + escapeHtml(role) + '"><input id="preset-role-' + escapeHtml(role) + '" name="preset-role-' + escapeHtml(role) + '" type="checkbox" data-preset-role="' + escapeHtml(role) + '" ' + (activeRoles[role] !== false ? 'checked' : '') + '> ' + escapeHtml(ROLE_LABELS[role]) + '</label>'
     ).join("") : '<p class="preset-desc">Pick a preset in Vote Next. Only admin can force the next section immediately.</p>';
 
     grid.querySelectorAll("[data-preset-id]").forEach(btn => {
@@ -1346,7 +1347,7 @@
         '<h3>' + escapeHtml(p.label) + '</h3>' +
         '<p>' + escapeHtml(p.purpose) + '</p>' +
         '<details><summary>Edit prompt</summary>' +
-        '<textarea data-role="' + escapeHtml(role) + '" data-base-prompt="' + escapeHtml(p.prompt) + '" aria-label="' + escapeHtml(p.label) + ' prompt">' + escapeHtml(effectiveRolePrompt(p.prompt, state.presetModes, role)) + '</textarea>' +
+        '<textarea id="persona-prompt-' + escapeHtml(role) + '" name="persona-prompt-' + escapeHtml(role) + '" data-role="' + escapeHtml(role) + '" data-base-prompt="' + escapeHtml(p.prompt) + '" aria-label="' + escapeHtml(p.label) + ' prompt">' + escapeHtml(effectiveRolePrompt(p.prompt, state.presetModes, role)) + '</textarea>' +
         '</details>' +
       '</article>'
     ).join("");

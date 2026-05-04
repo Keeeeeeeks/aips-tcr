@@ -129,12 +129,16 @@ def render_transport_stream(wav_path: Path, segment_path: Path) -> None:
     ffmpeg = shutil.which("ffmpeg")
     if not ffmpeg:
         raise RuntimeError("ffmpeg was not found on PATH")
+    duration = probe_duration_seconds(wav_path)
+    fade_out_start = max(0.0, duration - 0.45)
     _ = subprocess.run(
         [
             ffmpeg,
             "-y",
             "-i",
             str(wav_path),
+            "-af",
+            f"afade=t=in:st=0:d=0.08,afade=t=out:st={fade_out_start:.3f}:d=0.45",
             "-c:a",
             "aac",
             "-b:a",
@@ -380,7 +384,7 @@ def main() -> None:
     signal.signal(signal.SIGINT, request_stop)
     parser = argparse.ArgumentParser(description="Run a section-by-section AI ensemble conductor.")
     _ = parser.add_argument("--session-id", default="summit-demo")
-    _ = parser.add_argument("--section-bars", default=4, type=int)
+    _ = parser.add_argument("--section-bars", default=8, type=int)
     _ = parser.add_argument("--max-sections", default=0, type=int, help="0 means run forever")
     _ = parser.add_argument(
         "--prebuffer-sections",

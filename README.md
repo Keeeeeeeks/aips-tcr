@@ -72,21 +72,21 @@ python3 scripts/control_server.py
 Then run the section-loop conductor in another terminal:
 
 ```bash
-python3 scripts/segment_conductor.py --session-id summit-demo --section-bars 4
+python3 scripts/segment_conductor.py --session-id summit-demo --section-bars 8
 ```
 
-The conductor reads `public/live-control.json` before each 4-bar section, pre-generates 4 sections by default, then publishes HLS segments to `public/stream/index.m3u8`, writes `public/conductor-status.json`, and updates `public/sessions/<session-id>/current-stream.mp3`. During prebuffering, the page shows how many sections remain before live audio is ready.
+The conductor reads `public/live-control.json` before each 8-bar section, pre-generates 4 sections by default, applies short transport fades at HLS boundaries, then publishes HLS segments to `public/stream/index.m3u8`, writes `public/conductor-status.json`, and updates `public/sessions/<session-id>/current-stream.mp3`. During prebuffering, the page shows how many sections remain before live audio is ready.
 
 To change the startup buffer:
 
 ```bash
-python3 scripts/segment_conductor.py --session-id summit-demo --section-bars 4 --prebuffer-sections 8
+python3 scripts/segment_conductor.py --session-id summit-demo --section-bars 8 --prebuffer-sections 8
 ```
 
 By default, the growing current-session recording keeps only the latest hour. Older section MP3/WAV/TS files are trimmed as new sections arrive. Override the cap with:
 
 ```bash
-python3 scripts/segment_conductor.py --session-id summit-demo --section-bars 4 --max-recording-seconds 1800
+python3 scripts/segment_conductor.py --session-id summit-demo --section-bars 8 --max-recording-seconds 1800
 ```
 
 Use `--max-recording-seconds 0` only if you intentionally want an unbounded recording.
@@ -94,7 +94,7 @@ Use `--max-recording-seconds 0` only if you intentionally want an unbounded reco
 The conductor now routes every section through role-agent bundles. By default those agents are local heuristics, which keeps the demo reliable offline. To try OpenAI-compatible LLM role calls, set `OPENAI_API_KEY` and run:
 
 ```bash
-OPENAI_API_KEY=... python3 scripts/segment_conductor.py --session-id summit-demo --section-bars 4 --agent-mode llm
+OPENAI_API_KEY=... python3 scripts/segment_conductor.py --session-id summit-demo --section-bars 8 --agent-mode llm
 ```
 
 Optional environment variables:
@@ -114,13 +114,13 @@ By default, the renderer uses the internal synth plus FFmpeg polish: stereo role
 If you install FluidSynth and have a `.sf2`/`.sf3` soundfont, the same MIDI path can render through it:
 
 ```bash
-SOUNDFONT_PATH=/path/to/soundfont.sf2 python3 scripts/segment_conductor.py --session-id summit-demo --section-bars 4
+SOUNDFONT_PATH=/path/to/soundfont.sf2 python3 scripts/segment_conductor.py --session-id summit-demo --section-bars 8
 ```
 
 or:
 
 ```bash
-python3 scripts/segment_conductor.py --session-id summit-demo --section-bars 4 --soundfont /path/to/soundfont.sf2
+python3 scripts/segment_conductor.py --session-id summit-demo --section-bars 8 --soundfont /path/to/soundfont.sf2
 ```
 
 If FluidSynth or the soundfont is missing, the conductor automatically falls back to the internal synth plus effects.

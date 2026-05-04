@@ -907,9 +907,9 @@
         <div class="title-bar">
           <div class="title-bar-text">Radio Status</div>
           <div class="title-bar-controls">
-            <button aria-label="Minimize"></button>
-            <button aria-label="Maximize"></button>
-            <button aria-label="Close"></button>
+            <button name="radio-status-minimize" aria-label="Minimize"></button>
+            <button name="radio-status-maximize" aria-label="Maximize"></button>
+            <button name="radio-status-close" aria-label="Close"></button>
           </div>
         </div>
         <div class="window-body">
@@ -943,7 +943,7 @@
         <div class="strip-body">
           <p class="form-label">This page uses the same server-side admin session as the API. Enter the value generated with <code>openssl rand -base64 32</code> and stored as <code>ADMIN_PASSWORD</code> or <code>ADMIN_SECRET</code>.</p>
           <label class="form-label" for="admin-password">Admin password</label>
-          <input id="admin-password" class="prompt-box" type="password" autocomplete="current-password" placeholder="ADMIN_PASSWORD from Hetzner .env" />
+          <input id="admin-password" name="admin-password" class="prompt-box" type="password" autocomplete="current-password" placeholder="ADMIN_PASSWORD from Hetzner .env" />
           <div class="form-actions">
             <button class="btn btn-secondary" id="btn-admin-login" type="button">Login</button>
             <button class="btn btn-secondary" id="btn-admin-logout" type="button">Logout</button>
@@ -951,13 +951,13 @@
           </div>
           <div class="admin-private" id="admin-private" hidden>
             <label class="form-label" for="admin-round-json">Curate next vote round as JSON array of 2-4 options</label>
-            <textarea id="admin-round-json" class="prompt-box" placeholder='[{"id":"clairo","label":"Clairo","prompt":"78 bpm warm bedroom-pop intimacy","tempo_bpm":78,"key":"C major","psychosis_level":0.18}]'></textarea>
+            <textarea id="admin-round-json" name="admin-round-json" class="prompt-box" placeholder='[{"id":"clairo","label":"Clairo","prompt":"78 bpm warm bedroom-pop intimacy","tempo_bpm":78,"key":"C major","psychosis_level":0.18}]'></textarea>
             <div class="form-actions">
               <button class="btn btn-secondary" id="btn-admin-save-round" type="button">Save vote round</button>
               <span class="save-status" id="admin-round-status" role="status"></span>
             </div>
             <label class="form-label" for="admin-override-json">Backstage override JSON</label>
-            <textarea id="admin-override-json" class="prompt-box" placeholder='{"enabled":true,"prompt":"92 bpm warm stable house band","tempo_bpm":92,"key":"A minor","time_signature":"4/4","psychosis_level":0.2}'></textarea>
+            <textarea id="admin-override-json" name="admin-override-json" class="prompt-box" placeholder='{"enabled":true,"prompt":"92 bpm warm stable house band","tempo_bpm":92,"key":"A minor","time_signature":"4/4","psychosis_level":0.2}'></textarea>
             <div class="form-actions">
               <button class="btn btn-secondary" id="btn-admin-save-override" type="button">Save override</button>
               <button class="btn btn-secondary" id="btn-admin-clear-override" type="button">Clear override</button>
@@ -974,7 +974,7 @@
       <section class="panel window glass active has-caret" role="region" aria-label="Now Playing">
         <div class="title-bar">
           <div class="title-bar-text">Now Playing</div>
-          <div class="title-bar-controls"><button aria-label="Help"></button></div>
+          <div class="title-bar-controls"><button name="now-playing-help" aria-label="Help"></button></div>
         </div>
         <div class="window-body">
             <div class="itunes-player" id="itunes-player">
@@ -994,10 +994,10 @@
             </div>
           <p class="form-label" id="hint-conductor">Conductor status: loading…</p>
           <label class="form-label" for="prompt-box">Prompt the ensemble in natural language</label>
-          <textarea id="prompt-box" class="prompt-box" placeholder="Example: make it haunted, sparse, metallic, and unstable"></textarea>
+          <textarea id="prompt-box" name="prompt-box" class="prompt-box" placeholder="Example: make it haunted, sparse, metallic, and unstable"></textarea>
           <div class="drift-row">
             <label class="form-label" for="drift">Psychosis level</label>
-            <input id="drift" class="slider" type="range" min="0" max="100" value="25" />
+            <input id="drift" name="drift" class="slider" type="range" min="0" max="100" value="25" />
             <span class="drift-readout" id="drift-readout">25 %</span>
           </div>
           <div class="form-actions">
@@ -1026,7 +1026,7 @@
             <span class="save-status" id="vote-save-status" role="status"></span>
           </div>
           <label class="form-label" for="suggestion-box">Suggest a future style for admin review</label>
-          <textarea id="suggestion-box" class="prompt-box" placeholder="Example: warm 6/8 bedroom-pop with fretless bass and choir pads"></textarea>
+          <textarea id="suggestion-box" name="suggestion-box" class="prompt-box" placeholder="Example: warm 6/8 bedroom-pop with fretless bass and choir pads"></textarea>
           <div class="form-actions">
             <button class="btn btn-secondary" id="btn-submit-suggestion" type="button">Submit suggestion</button>
             <span class="save-status" id="suggestion-status" role="status"></span>
@@ -1085,7 +1085,7 @@
 
           <!-- Transport -->
           <div class="transport">
-            <button class="tbtn play" id="t-play" aria-label="Play / Pause">▶</button>
+            <button class="tbtn play" id="t-play" type="button" aria-label="Play / Pause">▶</button>
             <button class="tbtn mute" id="t-mute" type="button" aria-pressed="false" aria-label="Mute audio">🔊</button>
             <span class="spacer"></span>
           </div>
@@ -1097,7 +1097,7 @@
         <article class="role-card panel window glass active percussion" data-role="percussion">
           <div class="title-bar">
             <div class="title-bar-text"><span class="role-head"><span class="led led-gray" aria-hidden="true" data-role-led></span> Percussion</span></div>
-            <div class="title-bar-controls"><button aria-label="Help"></button><button aria-label="Menu"></button></div>
+            <div class="title-bar-controls"><button name="percussion-help" aria-label="Help"></button><button name="percussion-menu" aria-label="Menu"></button></div>
           </div>
           <div class="window-body">
             <div class="role-grid">
@@ -1118,7 +1118,7 @@
         <article class="role-card panel window glass active bass" data-role="bass">
           <div class="title-bar">
             <div class="title-bar-text"><span class="role-head"><span class="led led-gray" aria-hidden="true" data-role-led></span> Bass</span></div>
-            <div class="title-bar-controls"><button aria-label="Help"></button><button aria-label="Menu"></button></div>
+            <div class="title-bar-controls"><button name="bass-help" aria-label="Help"></button><button name="bass-menu" aria-label="Menu"></button></div>
           </div>
           <div class="window-body">
             <div class="role-grid">
@@ -1139,7 +1139,7 @@
         <article class="role-card panel window glass active piano" data-role="piano">
           <div class="title-bar">
             <div class="title-bar-text"><span class="role-head"><span class="led led-gray" aria-hidden="true" data-role-led></span> Piano</span></div>
-            <div class="title-bar-controls"><button aria-label="Help"></button><button aria-label="Menu"></button></div>
+            <div class="title-bar-controls"><button name="piano-help" aria-label="Help"></button><button name="piano-menu" aria-label="Menu"></button></div>
           </div>
           <div class="window-body">
             <div class="role-grid">
@@ -1160,7 +1160,7 @@
         <article class="role-card panel window glass active lead" data-role="lead">
           <div class="title-bar">
             <div class="title-bar-text"><span class="role-head"><span class="led led-gray" aria-hidden="true" data-role-led></span> Lead</span></div>
-            <div class="title-bar-controls"><button aria-label="Help"></button><button aria-label="Menu"></button></div>
+            <div class="title-bar-controls"><button name="lead-help" aria-label="Help"></button><button name="lead-menu" aria-label="Menu"></button></div>
           </div>
           <div class="window-body">
             <div class="role-grid">
@@ -1181,7 +1181,7 @@
         <article class="role-card panel window glass active texture" data-role="texture">
           <div class="title-bar">
             <div class="title-bar-text"><span class="role-head"><span class="led led-gray" aria-hidden="true" data-role-led></span> Texture</span></div>
-            <div class="title-bar-controls"><button aria-label="Help"></button><button aria-label="Menu"></button></div>
+            <div class="title-bar-controls"><button name="texture-help" aria-label="Help"></button><button name="texture-menu" aria-label="Menu"></button></div>
           </div>
           <div class="window-body">
             <div class="role-grid">
@@ -1321,7 +1321,7 @@
     </aside>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
 <script src="./config.js"></script>
 <script src="./app.js"></script>
 </body>
