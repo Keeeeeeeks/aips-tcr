@@ -426,7 +426,23 @@
     if (!optionsRoot || !payload || !payload.round) return;
     const round = payload.round;
     const tally = payload.tally || { counts: {}, total_votes: 0 };
-    const options = Array.isArray(round.options) ? round.options : [];
+    let options = Array.isArray(round.options) ? round.options.slice() : [];
+    if (state.presetModes && state.presetModes.profiles) {
+      const seen = new Set(options.map(opt => opt && opt.id));
+      Object.keys(state.presetModes.profiles).forEach(id => {
+        if (id === "none" || seen.has(id)) return;
+        const profile = state.presetModes.profiles[id];
+        if (!profile) return;
+        options.push({
+          id: id,
+          label: profile.label || presetLabelFromId(id),
+          prompt: profile.live_prompt || "",
+          tempo_bpm: profile.tempo_bpm,
+          key: profile.key,
+          psychosis_level: profile.psychosis_level,
+        });
+      });
+    }
     const eta = payload.audible_eta || {};
     const winnerLabel = tally.winner ? " · leading: " + tally.winner : "";
     const etaCopy = eta.message ? " · " + eta.message : "";
@@ -656,6 +672,16 @@
     });
   }
 
+  function playLiveOrFallback() {
+    ensureAudioGraph();
+    if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+    return waitForLiveReady(2)
+      .then(() => attachLiveStream())
+      .then(() => audio.play())
+      .then(() => { state.audioStartedAt = Date.now(); })
+      .catch(() => tryArchiveFallback("Live stream unavailable. Playing latest archived recording."));
+  }
+
   function playRecording(url, label) {
     destroyHls();
     state.isLive = false;
@@ -759,11 +785,10 @@
    * TRANSPORT
    * ----------------------------------------------------------------*/
   bindClick("t-play", () => {
-    ensureAudioGraph();
-    if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
     if (audio.paused) {
-      if (!audio.src) audio.src = state.latestArchiveRecording;
-      audio.play().then(() => { state.audioStartedAt = state.audioStartedAt || Date.now(); });
+      const hasSource = !!audio.currentSrc || !!audio.src;
+      const action = hasSource ? audio.play() : playLiveOrFallback();
+      Promise.resolve(action).then(() => { state.audioStartedAt = state.audioStartedAt || Date.now(); });
     } else {
       audio.pause();
     }
@@ -772,22 +797,10 @@
   audio.addEventListener("pause", () => { $("t-play").textContent = "▶"; });
   audio.addEventListener("ended", () => { $("t-play").textContent = "▶"; });
 
-  bindClick("t-stop", () => {
-    audio.pause();
-    try { audio.currentTime = 0; } catch (_) { /* live HLS may reject */ }
-    state.audioStartedAt = null;
-  });
-  bindClick("t-rew", () => {
-    try { audio.currentTime = Math.max(0, audio.currentTime - 10); } catch (_) {}
-  });
-  bindClick("t-ff", () => {
-    try { audio.currentTime = Math.min((audio.duration || 0) || audio.currentTime + 10, audio.currentTime + 10); } catch (_) {}
-  });
-  bindClick("t-skip-back", () => {
-    try { audio.currentTime = Math.max(0, audio.currentTime - 30); } catch (_) {}
-  });
-  bindClick("t-skip-fwd", () => {
-    try { audio.currentTime = audio.currentTime + 30; } catch (_) {}
+  bindClick("t-mute", (e) => {
+    audio.muted = !audio.muted;
+    e.currentTarget.setAttribute("aria-pressed", audio.muted ? "true" : "false");
+    e.currentTarget.textContent = audio.muted ? "🔇" : "🔊";
   });
 
   bindClick("t-sync", (e) => {
@@ -1214,13 +1227,14 @@
     const ids = Object.keys(presetModes.profiles).filter(id => id !== "none");
     grid.innerHTML = ids.map(id => {
       const p = presetModes.profiles[id];
-      return '<button class="preset-btn" type="button" data-preset-id="' + escapeHtml(id) + '" aria-pressed="' + String(presetModes.active_profile === id) + '">' + escapeHtml(p.label || id) + '</button>';
+      const pressed = IS_ADMIN_ROUTE ? presetModes.active_profile === id : state.selectedVoteOption === id;
+      return '<button class="preset-btn" type="button" data-preset-id="' + escapeHtml(id) + '" aria-pressed="' + String(pressed) + '">' + escapeHtml(p.label || id) + '</button>';
     }).join("");
 
     const activeRoles = presetModes.active_roles || {};
-    toggles.innerHTML = Object.keys(ROLE_LABELS).map(role =>
+    toggles.innerHTML = IS_ADMIN_ROUTE ? Object.keys(ROLE_LABELS).map(role =>
       '<label class="preset-toggle"><input type="checkbox" data-preset-role="' + escapeHtml(role) + '" ' + (activeRoles[role] !== false ? 'checked' : '') + '> ' + escapeHtml(ROLE_LABELS[role]) + '</label>'
-    ).join("");
+    ).join("") : '<p class="preset-desc">Pick a preset in Vote Next. Only admin can force the next section immediately.</p>';
 
     grid.querySelectorAll("[data-preset-id]").forEach(btn => {
       btn.addEventListener("click", () => applyPreset(btn.getAttribute("data-preset-id")));
@@ -1272,6 +1286,13 @@
 
   function applyPreset(profileId) {
     if (!state.presetModes || !state.presetModes.profiles || !state.presetModes.profiles[profileId]) return;
+    if (!IS_ADMIN_ROUTE) {
+      state.selectedVoteOption = profileId;
+      renderPresetModes(state.presetModes);
+      refreshVoteRound();
+      setStatus($("preset-status"), "Preset selected as your vote. Submit it in Vote Next.", "ok");
+      return;
+    }
     const next = clonePresetModes(state.presetModes);
     next.active_profile = profileId;
     const profile = next.profiles[profileId];

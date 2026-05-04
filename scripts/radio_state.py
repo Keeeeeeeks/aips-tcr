@@ -78,8 +78,6 @@ def default_vote_round(public: Path) -> dict[str, Any]:
                     "psychosis_level": profile.get("psychosis_level", 0.25),
                 }
             )
-            if len(options) >= 4:
-                break
     if not options:
         options = [
             {"id": "spacious", "label": "Spacious", "prompt": "Keep the band spacious, late-night, and coherent.", "tempo_bpm": 92, "key": "A minor", "psychosis_level": 0.25},
@@ -90,7 +88,7 @@ def default_vote_round(public: Path) -> dict[str, Any]:
         "status": "active",
         "created_at": utc_now(),
         "updated_at": utc_now(),
-        "options": options[:4],
+        "options": options,
         "role_options": {role: [] for role in sorted(ROLE_KEYS)},
         "votes": {},
         "closed_snapshot": None,
@@ -105,6 +103,14 @@ def read_vote_round(root: Path) -> dict[str, Any]:
     path = vote_round_path(root)
     payload = read_json(path, None)
     if isinstance(payload, dict) and isinstance(payload.get("options"), list):
+        public = paths(root)["public"]
+        default_options = default_vote_round(public).get("options", [])
+        if isinstance(default_options, list):
+            existing_ids = {str(option.get("id")) for option in payload["options"] if isinstance(option, dict)}
+            missing = [option for option in default_options if isinstance(option, dict) and str(option.get("id")) not in existing_ids]
+            if missing:
+                payload["options"] = [*payload["options"], *missing]
+                write_json(path, payload)
         return cast(dict[str, Any], payload)
     payload = default_vote_round(paths(root)["public"])
     write_json(path, payload)

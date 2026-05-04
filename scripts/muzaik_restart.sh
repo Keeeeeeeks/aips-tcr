@@ -20,6 +20,13 @@ export AIPS_TRUSTED_PROXY_RANGES="${AIPS_TRUSTED_PROXY_RANGES:-127.0.0.1/32,::1/
 mkdir -p "${LOG_DIR}"
 cd "${APP_DIR}"
 
+if [[ -f "${APP_DIR}/.env" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "${APP_DIR}/.env"
+  set +a
+fi
+
 echo "Stopping existing MuzAIk processes, if any..."
 pkill -TERM -f "${APP_DIR}/scripts/segment_conductor.py|scripts/segment_conductor.py" || true
 pkill -TERM -f "${APP_DIR}/scripts/control_server.py|scripts/control_server.py" || true

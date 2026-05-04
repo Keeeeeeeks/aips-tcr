@@ -65,12 +65,13 @@
 
     .desk {
       position: relative; z-index: 1;
-      display: grid; grid-template-columns: 118px 1fr 118px;
+      display: grid; grid-template-columns: 1fr 118px;
       gap: 16px; max-width: 1400px; margin: 0 auto;
       padding: 22px 22px 56px; min-height: 100vh;
     }
 
     /* Left rail */
+    .rail-left { display: none; }
     .rail-left, .rail-right { display: flex; flex-direction: column; gap: 14px; padding-top: 38px; }
     .icon-btn {
       width: 100%; min-height: 86px; border-radius: 22px;
@@ -585,6 +586,7 @@
         inset 0 -3px 5px rgba(0,0,0,0.30),
         0 6px 18px rgba(20,184,166,0.5);
     }
+    .tbtn.mute[aria-pressed="true"] { color: #052e2a; background: linear-gradient(180deg, #e5e7eb, #94a3b8); }
     .transport .spacer { flex: 1; }
     .sync-btn {
       padding: 8px 14px; border-radius: 999px;
@@ -814,7 +816,7 @@
       .desk { grid-template-columns: 1fr; }
       .rail-left {
         position: sticky; top: 0; z-index: 20;
-        display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+        display: none;
         gap: 8px; padding: 8px;
         border-radius: 18px;
         background: rgba(3, 7, 18, 0.82);
@@ -849,7 +851,7 @@
       .master { grid-template-columns: auto 1fr auto; text-align: left; justify-content: start; }
       .spectrum-canvas { height: 76px; }
       .meters { display: none; }
-      .transport { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      .transport { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
       .transport .spacer { display: none; }
       .tbtn, .tbtn.play, .sync-btn, .div-select, .tap-btn { width: 100%; min-height: 44px; }
       .meta-row { grid-template-columns: repeat(2, 1fr); }
@@ -887,19 +889,6 @@
   <audio id="player" class="hidden-audio" preload="auto" playsinline></audio>
 
   <div class="desk">
-
-    <!-- Left rail -->
-    <aside class="rail-left" aria-label="App rail">
-      <div class="system-online">
-        <div class="system-orb offline" id="system-orb" aria-hidden="true"></div>
-        <div id="system-status-label">System<br/>Offline</div>
-      </div>
-      <button class="icon-btn" data-scroll="llm" aria-current="true" aria-label="Connection panel"><span class="icon" aria-hidden="true">⠿</span><span class="label">Connect</span></button>
-      <button class="icon-btn" data-scroll="audio"     aria-label="Audio panel"><span class="icon" aria-hidden="true">∿</span><span class="label">Audio</span></button>
-      <button class="icon-btn" data-scroll="personas"  aria-label="Personas"><span class="icon" aria-hidden="true">▣</span><span class="label">Personas</span></button>
-      <button class="icon-btn" data-scroll="settings"  aria-label="Settings"><span class="icon" aria-hidden="true">⚙</span><span class="label">Archive</span></button>
-      <button class="icon-btn" data-scroll="about"  aria-label="About"><span class="icon" aria-hidden="true">?</span><span class="label">About</span></button>
-    </aside>
 
     <!-- Stage -->
     <div class="stage">
@@ -1096,23 +1085,9 @@
 
           <!-- Transport -->
           <div class="transport">
-            <button class="tbtn" id="t-skip-back" aria-label="Skip back 30 seconds">⏮</button>
-            <button class="tbtn" id="t-rew" aria-label="Rewind 10 seconds">⏪</button>
             <button class="tbtn play" id="t-play" aria-label="Play / Pause">▶</button>
-            <button class="tbtn" id="t-stop" aria-label="Stop">⏹</button>
-            <button class="tbtn" id="t-ff" aria-label="Fast forward 10 seconds">⏩</button>
-            <button class="tbtn" id="t-skip-fwd" aria-label="Skip forward 30 seconds">⏭</button>
+            <button class="tbtn mute" id="t-mute" type="button" aria-pressed="false" aria-label="Mute audio">🔊</button>
             <span class="spacer"></span>
-            <button class="sync-btn" id="t-sync" aria-pressed="false" aria-label="Sync to BPM">
-              <span class="led-dot" aria-hidden="true"></span> SYNC
-            </button>
-            <select class="div-select" id="t-div" aria-label="Subdivision">
-              <option>1/2</option><option selected>1/4</option>
-              <option>1/8</option><option>1/16</option>
-            </select>
-            <button class="tap-btn" id="t-tap" aria-label="Tap tempo">
-              TAP <span class="tap-bpm" id="tap-bpm"></span>
-            </button>
           </div>
         </div>
       </section>

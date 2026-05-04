@@ -25,6 +25,24 @@ import radio_state
 
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC = ROOT / "public"
+
+
+def load_env_file(path: Path) -> None:
+    if not path.exists():
+        return
+    for raw_line in path.read_text().splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key:
+            os.environ.setdefault(key, value)
+
+
+load_env_file(ROOT / ".env")
+
 PERSONAS_PATH = PUBLIC / "personas.json"
 LIVE_CONTROL_PATH = PUBLIC / "live-control.json"
 CONDUCTOR_STATUS_PATH = PUBLIC / "conductor-status.json"
@@ -830,8 +848,8 @@ class ControlHandler(SimpleHTTPRequestHandler):
                 if not require_admin(self):
                     return
                 raw_options = payload.get("options")
-                if not isinstance(raw_options, list) or not 2 <= len(raw_options) <= 4:
-                    raise ValueError("Vote round needs 2 to 4 options")
+                if not isinstance(raw_options, list) or len(raw_options) < 2:
+                    raise ValueError("Vote round needs at least 2 options")
                 current = radio_state.read_vote_round(ROOT)
                 radio_state.close_round_for_summary(ROOT, current)
                 current.update({"id": str(payload.get("id") or f"round-{int(time.time())}"), "status": "active", "options": [radio_state.clean_option(cast(dict[str, Any], item)) for item in raw_options if isinstance(item, dict)], "role_options": validate_role_options(payload.get("role_options")), "votes": {}, "created_at": utc_now(), "closed_snapshot": None})
@@ -859,8 +877,6 @@ class ControlHandler(SimpleHTTPRequestHandler):
                 if not isinstance(options, list):
                     options = []
                     current["options"] = options
-                if len(options) >= 4:
-                    raise ValueError("Current round already has 4 options; create a new curated round or remove one first")
                 options.append(option)
                 self.send_json(HTTPStatus.OK, {"ok": True, "option": option, "round": radio_state.save_vote_round(ROOT, current)})
                 return
