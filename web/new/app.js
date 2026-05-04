@@ -293,7 +293,9 @@
    * CONDUCTOR STATUS — every 2s, drives sync%, hint lines, system orb
    * ----------------------------------------------------------------*/
   function paintSync(syncPct) {
-    const bars = $("sync-bars").querySelectorAll("i");
+    const root = $("sync-bars");
+    if (!root) return;
+    const bars = root.querySelectorAll("i");
     const lit = Math.round(clamp(syncPct, 0, 100) / 12.5);
     bars.forEach((b, i) => {
       const h = (i + 1) * 12;
@@ -314,39 +316,39 @@
       const scheduledLive = radioAllowsLive();
 
       if (!scheduledLive) {
-        sysOrb.classList.add("offline");
-        sysLabel.innerHTML = "Radio<br/>Offline";
-        $("meta-session").textContent = "OFF AIR";
-        $("meta-sync").textContent = "—";
+        if (sysOrb) sysOrb.classList.add("offline");
+        if (sysLabel) sysLabel.innerHTML = "Radio<br/>Offline";
+        if ($("meta-session")) $("meta-session").textContent = "OFF AIR";
+        if ($("meta-sync")) $("meta-sync").textContent = "—";
         paintSync(0);
-        hintConductor.textContent = (state.radioStatus && state.radioStatus.message) || "Radio is offline outside the daily broadcast window.";
-        bufDot.classList.add("bad");
-        bufText.textContent = "Radio offline until the next 5:00 AM EST opening window";
-        livePill.textContent = "OFFLINE";
-        livePill.classList.add("idle");
+        if (hintConductor) hintConductor.textContent = (state.radioStatus && state.radioStatus.message) || "Radio is offline outside the daily broadcast window.";
+        if (bufDot) bufDot.classList.add("bad");
+        if (bufText) bufText.textContent = "Radio offline until the next 5:00 AM EST opening window";
+        if (livePill) livePill.textContent = "OFFLINE";
+        if (livePill) livePill.classList.add("idle");
         state.isLive = false;
         return;
       }
 
       if (!c) {
-        sysOrb.classList.add("offline");
-        sysLabel.innerHTML = "System<br/>Offline";
-        $("meta-session").textContent = "OFFLINE";
-        $("meta-sync").textContent = "—";
+        if (sysOrb) sysOrb.classList.add("offline");
+        if (sysLabel) sysLabel.innerHTML = "System<br/>Offline";
+        if ($("meta-session")) $("meta-session").textContent = "OFFLINE";
+        if ($("meta-sync")) $("meta-sync").textContent = "—";
         paintSync(0);
-        hintConductor.textContent = "Conductor status: not running. Prompt changes apply to the next generated form.";
-        bufDot.classList.add("bad");
-        bufText.textContent = "Conductor not running";
-        livePill.textContent = "IDLE";
-        livePill.classList.add("idle");
+        if (hintConductor) hintConductor.textContent = "Conductor status: not running. Prompt changes apply to the next generated form.";
+        if (bufDot) bufDot.classList.add("bad");
+        if (bufText) bufText.textContent = "Conductor not running";
+        if (livePill) livePill.textContent = "IDLE";
+        if (livePill) livePill.classList.add("idle");
         if (state.isLive) tryArchiveFallback("Live conductor status disappeared. Playing the latest archived stream.");
         state.isLive = false;
         return;
       }
 
-      sysOrb.classList.toggle("offline", !c.live_ready);
-      sysLabel.innerHTML = c.live_ready ? "System<br/>Online" : "System<br/>Buffering";
-      $("meta-session").textContent = (c.session_id || "—").toString().toUpperCase();
+      if (sysOrb) sysOrb.classList.toggle("offline", !c.live_ready);
+      if (sysLabel) sysLabel.innerHTML = c.live_ready ? "System<br/>Online" : "System<br/>Buffering";
+      if ($("meta-session")) $("meta-session").textContent = (c.session_id || "—").toString().toUpperCase();
       state.sectionSeconds = c.section_seconds || state.sectionSeconds;
 
       // Sync %: when live, fall to 99-100% based on prompt-ETA backlog; while prebuffering, ramp from 0 to 100
@@ -359,22 +361,22 @@
         const target = Math.max(1, c.prebuffer_sections || 1);
         sync = clamp((buf / target) * 100, 0, 95);
       }
-      $("meta-sync").textContent = sync.toFixed(1) + "%";
+      if ($("meta-sync")) $("meta-sync").textContent = sync.toFixed(1) + "%";
       paintSync(sync);
 
-      bufDot.classList.toggle("bad", !c.live_ready);
-      bufText.textContent = c.live_ready
+      if (bufDot) bufDot.classList.toggle("bad", !c.live_ready);
+      if (bufText) bufText.textContent = c.live_ready
         ? "Live buffer ready"
         : "Prebuffering · " + (c.buffered_sections || 0) + "/" + (c.prebuffer_sections || 0) + " sections";
 
       const isPlayingLive = state.isLive && !$("player").paused;
-      livePill.textContent = isPlayingLive ? "LIVE" : (c.live_ready ? "READY" : "WAIT");
-      livePill.classList.toggle("idle", !isPlayingLive);
+      if (livePill) livePill.textContent = isPlayingLive ? "LIVE" : (c.live_ready ? "READY" : "WAIT");
+      if (livePill) livePill.classList.toggle("idle", !isPlayingLive);
 
       const promptEta = Number.isInteger(c.prompt_sections_until_heard)
         ? "audible in ~" + c.prompt_sections_until_heard + " buffered section(s)"
         : "next generated section";
-      hintConductor.textContent =
+      if (hintConductor) hintConductor.textContent =
         "Conductor: " + (c.status || "—") + " · section " + (c.section_index ?? "—") +
         " · buffer " + (c.buffered_sections || 0) + "/" + (c.prebuffer_sections || 0) +
         " · next boundary " + (c.next_section_eta_seconds ?? "?") + "s · " + promptEta;
@@ -400,6 +402,7 @@
     var activePresetId = state.presetModes && state.presetModes.active_profile;
     var isCustom = !activeMode || activePresetId === "none";
     var modeLabel = isCustom ? "Custom" : (activeMode.label || presetLabelFromId(activePresetId));
+    var nowPlayingLabel = isCustom ? "Custom Muzak" : (modeLabel + " - inspired Muzak");
     var desc = isCustom
       ? "Freeform prompt mode. Write anything and the ensemble will interpret it."
       : (activeMode.description || "");
@@ -408,7 +411,7 @@
     var drift = c ? Math.round((c.psychosis_level || 0) * 100) : 25;
     var prompt = (c && c.prompt) || "";
 
-    $("itunes-mode-name").textContent = modeLabel;
+    $("itunes-mode-name").textContent = nowPlayingLabel;
     $("itunes-mode-desc").textContent = desc;
     $("itunes-bpm").textContent = bpm + " BPM";
     $("itunes-key").textContent = String(key).toUpperCase();

@@ -933,28 +933,6 @@
         </div>
       </section>
 
-      <!-- Vote Next -->
-      <section class="panel window glass active has-caret" id="panel-vote" role="region" aria-label="Vote Next">
-        <div class="title-bar">
-          <div class="title-bar-text">Vote Next</div>
-        </div>
-        <div class="window-body">
-          <p class="form-label" id="vote-status">Loading voting round…</p>
-          <div class="preset-grid" id="vote-options"></div>
-          <div class="preset-role-toggles" id="role-vote-options"></div>
-          <div class="form-actions">
-            <button class="btn btn-secondary" id="btn-submit-vote" type="button">Submit vote</button>
-            <span class="save-status" id="vote-save-status" role="status"></span>
-          </div>
-          <label class="form-label" for="suggestion-box">Suggest a future style for admin review</label>
-          <textarea id="suggestion-box" class="prompt-box" placeholder="Example: warm 6/8 bedroom-pop with fretless bass and choir pads"></textarea>
-          <div class="form-actions">
-            <button class="btn btn-secondary" id="btn-submit-suggestion" type="button">Submit suggestion</button>
-            <span class="save-status" id="suggestion-status" role="status"></span>
-          </div>
-        </div>
-      </section>
-
       <!-- Admin -->
       <details class="strip admin-only" id="panel-admin" open>
         <summary>
@@ -992,10 +970,10 @@
         </div>
       </details>
 
-      <!-- Live Influence -->
-      <section class="panel window glass active has-caret" role="region" aria-label="Live Influence">
+      <!-- Now Playing -->
+      <section class="panel window glass active has-caret" role="region" aria-label="Now Playing">
         <div class="title-bar">
-          <div class="title-bar-text">Live Influence</div>
+          <div class="title-bar-text">Now Playing</div>
           <div class="title-bar-controls"><button aria-label="Help"></button></div>
         </div>
         <div class="window-body">
@@ -1030,6 +1008,28 @@
               <span aria-hidden="true">∿</span> Play latest archived recording
             </button>
             <span class="save-status" id="apply-status" role="status"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Vote Next -->
+      <section class="panel window glass active has-caret" id="panel-vote" role="region" aria-label="Vote Next">
+        <div class="title-bar">
+          <div class="title-bar-text">Vote Next</div>
+        </div>
+        <div class="window-body">
+          <p class="form-label" id="vote-status">Loading voting round…</p>
+          <div class="preset-grid" id="vote-options"></div>
+          <div class="preset-role-toggles" id="role-vote-options"></div>
+          <div class="form-actions">
+            <button class="btn btn-secondary" id="btn-submit-vote" type="button">Submit vote</button>
+            <span class="save-status" id="vote-save-status" role="status"></span>
+          </div>
+          <label class="form-label" for="suggestion-box">Suggest a future style for admin review</label>
+          <textarea id="suggestion-box" class="prompt-box" placeholder="Example: warm 6/8 bedroom-pop with fretless bass and choir pads"></textarea>
+          <div class="form-actions">
+            <button class="btn btn-secondary" id="btn-submit-suggestion" type="button">Submit suggestion</button>
+            <span class="save-status" id="suggestion-status" role="status"></span>
           </div>
         </div>
       </section>
