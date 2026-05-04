@@ -112,7 +112,8 @@
     }));
   }
   function getJson(url) {
-    return fetch(url, { cache: "no-store", credentials: "include" })
+    const credentials = /\/api\//.test(url) ? "include" : "omit";
+    return fetch(url, { cache: "no-store", credentials: credentials })
       .then(r => r.ok ? r.json() : null)
       .catch(() => null);
   }
