@@ -747,7 +747,10 @@
   bindClick("btn-archive", () => {
     ensureAudioGraph();
     if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
-    playRecording(state.latestArchiveRecording, "Manual fallback selected. Playing latest archived recording.")
+    tryArchiveFallback("Manual fallback selected. Playing latest archived recording.")
+      .then(played => {
+        if (!played) throw new Error("No archived recording is reachable yet.");
+      })
       .catch(err => setStatus($("apply-status"), err.message, "error"));
   });
 
