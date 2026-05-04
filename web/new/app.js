@@ -519,6 +519,7 @@
   let lData = null;
   let rData = null;
 
+  audio.crossOrigin = "anonymous";
   audio.volume = state.masterVolume;
 
   function ensureAudioGraph() {
@@ -645,6 +646,7 @@
     }
     destroyHls();
     state.isLive = true;
+    audio.crossOrigin = "anonymous";
     if (audio.canPlayType("application/vnd.apple.mpegurl")) {
       audio.src = PATHS.streamHls + "?v=" + Date.now();
       audio.load();
@@ -658,7 +660,11 @@
       return Promise.reject(new Error("This browser cannot play HLS and hls.js is unavailable."));
     }
     return new Promise((resolve, reject) => {
-      const hls = new window.Hls({ defaultAudioCodec: "mp4a.40.2", initialLiveManifestSize: 2 });
+      const hls = new window.Hls({
+        defaultAudioCodec: "mp4a.40.2",
+        initialLiveManifestSize: 2,
+        xhrSetup: xhr => { xhr.withCredentials = false; },
+      });
       const t = setTimeout(() => { reject(new Error("Timed out buffering HLS segments.")); }, 25000);
       hls.on(window.Hls.Events.FRAG_BUFFERED, () => { clearTimeout(t); resolve(); });
       hls.on(window.Hls.Events.ERROR, (_e, data) => {
@@ -688,6 +694,7 @@
   function playRecording(url, label) {
     destroyHls();
     state.isLive = false;
+    audio.crossOrigin = "anonymous";
     audio.src = mediaUrl(url);
     audio.load();
     return audio.play().then(() => {
@@ -791,7 +798,9 @@
     if (audio.paused) {
       const hasSource = !!audio.currentSrc || !!audio.src;
       const action = hasSource ? audio.play() : playLiveOrFallback();
-      Promise.resolve(action).then(() => { state.audioStartedAt = state.audioStartedAt || Date.now(); });
+      Promise.resolve(action)
+        .then(() => { state.audioStartedAt = state.audioStartedAt || Date.now(); })
+        .catch(err => setStatus($("apply-status"), err.message || "Audio playback failed.", "error"));
     } else {
       audio.pause();
     }
