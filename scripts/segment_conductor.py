@@ -278,6 +278,7 @@ def write_conductor_status(
         "section_index": section_index,
         "section_seconds": section_seconds,
         "current_prompt": live_control["prompt"],
+        "active_preset": live_control.get("active_preset", "none"),
         "last_applied_prompt": last_applied_prompt,
         "psychosis_level": live_control["psychosis_level"],
         "tempo_bpm": dummy.effective_tempo_bpm(live_control),

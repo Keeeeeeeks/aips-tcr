@@ -380,6 +380,7 @@
         "Conductor: " + (c.status || "—") + " · section " + (c.section_index ?? "—") +
         " · buffer " + (c.buffered_sections || 0) + "/" + (c.prebuffer_sections || 0) +
         " · next boundary " + (c.next_section_eta_seconds ?? "?") + "s · " + promptEta;
+      renderItunesPlayer(c);
     });
   }
   refreshConductor();
@@ -412,7 +413,7 @@
     var bpm = (c && c.tempo_bpm) || (activeMode && activeMode.tempo_bpm) || "—";
     var key = (c && c.key) || (activeMode && activeMode.key) || "—";
     var drift = c ? Math.round((c.psychosis_level || 0) * 100) : 25;
-    var prompt = (c && c.prompt) || "";
+    var prompt = (c && (c.prompt || c.current_prompt)) || "";
 
     $("itunes-mode-name").textContent = nowPlayingLabel;
     $("itunes-mode-desc").textContent = desc;
