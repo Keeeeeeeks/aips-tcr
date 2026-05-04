@@ -16,22 +16,29 @@ import control_server  # noqa: E402
 class RadioStateTests(unittest.TestCase):
     def setUp(self) -> None:
         import tempfile
+        self.previous_state_dir = os.environ.pop("AIPS_STATE_DIR", None)
         self.tempdir = tempfile.TemporaryDirectory()
         self.root = Path(self.tempdir.name)
 
     def tearDown(self) -> None:
         self.tempdir.cleanup()
+        if self.previous_state_dir is not None:
+            os.environ["AIPS_STATE_DIR"] = self.previous_state_dir
 
-    def test_vote_round_blocks_duplicate_vote(self) -> None:
+    def test_vote_round_allows_vote_updates(self) -> None:
         public = self.root / "public"
         public.mkdir()
         round_payload = radio_state.default_vote_round(public)
         radio_state.save_vote_round(self.root, round_payload)
         option_id = round_payload["options"][0]["id"]
+        next_option_id = round_payload["options"][1]["id"]
         first = radio_state.record_vote(self.root, "voter-1", {"option_id": option_id}, "127.0.0.1")
         self.assertEqual(first["tally"]["total_votes"], 1)
-        with self.assertRaisesRegex(ValueError, "already voted"):
-            radio_state.record_vote(self.root, "voter-1", {"option_id": option_id}, "127.0.0.1")
+        updated = radio_state.record_vote(self.root, "voter-1", {"option_id": next_option_id}, "127.0.0.1")
+        self.assertEqual(updated["tally"]["total_votes"], 1)
+        self.assertEqual(updated["my_vote"]["option_id"], next_option_id)
+        self.assertEqual(updated["tally"]["counts"][option_id], 0)
+        self.assertEqual(updated["tally"]["counts"][next_option_id], 1)
 
     def test_vote_round_includes_audible_eta(self) -> None:
         public = self.root / "public"

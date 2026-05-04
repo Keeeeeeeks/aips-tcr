@@ -216,8 +216,6 @@ def record_vote(root: Path, voter_id: str, payload: dict[str, Any], ip: str) -> 
     if not isinstance(votes, dict):
         votes = {}
         round_payload["votes"] = votes
-    if voter_id in votes:
-        raise ValueError("This browser already voted in the active round")
     option_id = str(payload.get("option_id") or "")
     options = round_payload.get("options")
     valid_options = {str(option.get("id")) for option in options if isinstance(option, dict)} if isinstance(options, list) else set()
@@ -242,7 +240,9 @@ def record_vote(root: Path, voter_id: str, payload: dict[str, Any], ip: str) -> 
             if allowed_values and value not in allowed_values:
                 raise ValueError(f"Unknown role vote option for {role}")
             role_votes[role] = value[:80]
-    votes[voter_id] = {"option_id": option_id, "role_votes": role_votes, "created_at": utc_now(), "ip_hash": hash_ip(ip)}
+    existing_vote = votes.get(voter_id) if isinstance(votes, dict) else None
+    created_at = existing_vote.get("created_at") if isinstance(existing_vote, dict) else utc_now()
+    votes[voter_id] = {"option_id": option_id, "role_votes": role_votes, "created_at": created_at, "updated_at": utc_now(), "ip_hash": hash_ip(ip)}
     save_vote_round(root, round_payload)
     append_behavior_event(root, "vote", {"option_id": option_id, "role_votes": role_votes})
     return public_vote_round(root, voter_id)

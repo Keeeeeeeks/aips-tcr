@@ -749,10 +749,13 @@ def build_events(seed: int, live_control: LiveControl) -> list[Event]:
             events.append(Event("percussion", bar, beat, 0.16 + rng.uniform(0.0, 0.08), drum_pitch, velocity))
         if rng.random() < 0.72 * density_scale:
             events.append(Event("percussion", bar, min(2.5, BEATS_PER_BAR + 0.5), 0.12, 38, int(58 + phrase_energy * 18)))
-        if bar % 4 == 0 or rng.random() < 0.24 * density_scale:
+        is_section_ending_bar = bar == TOTAL_BARS
+        if (bar % 4 == 0 and not is_section_ending_bar) or rng.random() < 0.24 * density_scale:
             events.append(Event("percussion", bar, min(BEATS_PER_BAR + 0.5, 4.5), 0.12, 38, int(62 + phrase_energy * 18)))
             if rng.random() < 0.45:
                 events.append(Event("percussion", bar, min(BEATS_PER_BAR + 0.75, 4.75), 0.1, 42, 54))
+        elif is_section_ending_bar and BEATS_PER_BAR >= 4:
+            events.append(Event("percussion", bar, 4.0, 0.08, 42, int(38 + phrase_energy * 8)))
 
         for idx, pitch in enumerate(bass_pattern[:BEATS_PER_BAR]):
             approach = 0 if steady_bass else (-1 if idx == 3 and rng.random() < 0.34 + drift * 0.12 else 0)

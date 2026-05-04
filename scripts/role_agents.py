@@ -152,6 +152,7 @@ def generation_params_prompt(conductor_state: ConductorState, live_control: dumm
                 "density must be between 0.2 and 2.4.",
                 "MIDI programs must be integers from 0 to 127 for bass, piano, lead, and texture only.",
                 "Stay close enough to the active preset to preserve continuity, but make concrete changes requested by the live_prompt.",
+                "Design parameters for an 8-bar phrase arc that can continue into the next section; avoid abrupt resets, final-bar stop gestures, or one-shot 4-bar loops unless the prompt explicitly asks for a hard break.",
             ],
         }
     )
@@ -318,7 +319,10 @@ def role_agent_prompt(conductor_state: ConductorState, role: RoleName) -> str:
                 "Tempo and key are conductor-level controls already applied in conductor_state; do not override them inside a role bundle.",
                 "If uncertain, emit a sparse safe support pattern.",
                 "If live_prompt asks for a genre, energy, mood, or instrumentation change, make this role's events obviously reflect that request in this section.",
-                "Vary each segment from the previous generic loop; avoid repeating the same rhythm/register shape by default.",
+                "Write this as part of a continuous radio performance: maintain groove, register, and harmonic identity across the full section.",
+                "Do not create a hard cadence, full stop, crash ending, or total texture reset in the final bar unless the live_prompt explicitly asks for a hard break.",
+                "Prefer pickups, held textures, bass continuation, and light drum fills near the boundary so the next HLS section can feel stitched rather than restarted.",
+                "Vary each segment gently from the previous generic loop; avoid repeating the same rhythm/register shape exactly, but do not jump to a new song every section.",
             ],
         }
     )

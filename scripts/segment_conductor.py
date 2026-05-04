@@ -346,6 +346,9 @@ def apply_vote_winner_to_live_control(live_control: dummy.LiveControl) -> dummy.
     winner = radio_state.current_winning_option(ROOT)
     if winner is None:
         return live_control
+    winner_id = winner.get("id")
+    if isinstance(winner_id, str) and winner_id.strip():
+        live_control["active_preset"] = winner_id.strip()
     prompt = winner.get("prompt")
     if isinstance(prompt, str) and prompt.strip():
         live_control["prompt"] = prompt.strip()

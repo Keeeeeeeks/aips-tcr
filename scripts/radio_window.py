@@ -119,7 +119,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Start/stop MuzAIk conductor according to the 5AM-7PM ET live window.")
     parser.add_argument("command", choices=["status", "start", "stop", "ensure-window"])
     parser.add_argument("--session-id", default=os.environ.get("AIPS_RADIO_SESSION_ID", "summit-demo"))
-    parser.add_argument("--section-bars", default=4, type=int)
+    parser.add_argument("--section-bars", default=8, type=int)
     parser.add_argument("--prebuffer-sections", default=4, type=int)
     parser.add_argument("--max-recording-seconds", default=3600, type=int)
     parser.add_argument("--agent-mode", default=os.environ.get("AIPS_AGENT_MODE", "heuristic"), choices=["heuristic", "llm"])

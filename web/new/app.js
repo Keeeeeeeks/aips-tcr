@@ -391,15 +391,18 @@
   function renderLiveControl(c) {
     if (!c) return;
     const level = Math.round((c.psychosis_level || 0) * 100);
-    $("prompt-box").value = c.prompt || "";
-    $("drift").value = String(level);
-    $("drift-readout").textContent = level + " %";
+    if ($("prompt-box")) $("prompt-box").value = c.prompt || "";
+    if ($("drift")) $("drift").value = String(level);
+    if ($("drift-readout")) $("drift-readout").textContent = level + " %";
     renderItunesPlayer(c);
   }
 
   function renderItunesPlayer(c) {
-    var activeMode = activePreset(state.presetModes);
-    var activePresetId = state.presetModes && state.presetModes.active_profile;
+    var livePresetId = c && c.active_preset;
+    var activePresetId = livePresetId || (state.presetModes && state.presetModes.active_profile);
+    var activeMode = state.presetModes && state.presetModes.profiles && activePresetId
+      ? state.presetModes.profiles[activePresetId]
+      : activePreset(state.presetModes);
     var isCustom = !activeMode || activePresetId === "none";
     var modeLabel = isCustom ? "Custom" : (activeMode.label || presetLabelFromId(activePresetId));
     var nowPlayingLabel = isCustom ? "Custom Muzak" : (modeLabel + " - inspired Muzak");
@@ -418,7 +421,11 @@
     $("itunes-drift").textContent = "DRIFT " + drift + "%";
     $("itunes-marquee").innerHTML = "&#9835; " + escapeHtml(prompt || "No prompt set.") + " &#9835;";
   }
-  getJson(PATHS.liveControl).then(renderLiveControl);
+  function refreshLiveControl() {
+    return getJson(PATHS.liveControl).then(renderLiveControl);
+  }
+  refreshLiveControl();
+  setInterval(refreshLiveControl, 10000);
 
   /* ------------------------------------------------------------------
    * VOTING + SUGGESTIONS
@@ -446,10 +453,12 @@
         });
       });
     }
+    if (payload.my_vote && payload.my_vote.option_id) state.selectedVoteOption = payload.my_vote.option_id;
     const eta = payload.audible_eta || {};
-    const winnerLabel = tally.winner ? " · leading: " + tally.winner : "";
+    const selectedLabel = state.selectedVoteOption ? " · selected: " + optionLabelById(options, state.selectedVoteOption) : "";
+    const winnerLabel = tally.winner ? " · leading: " + optionLabelById(options, tally.winner) : "";
     const etaCopy = eta.message ? " · " + eta.message : "";
-    $("vote-status").textContent = "Vote for the next generated section · " + (tally.total_votes || 0) + " vote(s) counted" + winnerLabel + etaCopy;
+    $("vote-status").textContent = "Vote for the next generated section · " + (tally.total_votes || 0) + " vote(s) counted" + selectedLabel + winnerLabel + etaCopy;
     optionsRoot.innerHTML = options.map(opt => {
       const count = (tally.counts && tally.counts[opt.id]) || 0;
       return '<button class="preset-btn" type="button" name="vote-option-' + escapeHtml(opt.id) + '" data-vote-option="' + escapeHtml(opt.id) + '" aria-pressed="' + String(state.selectedVoteOption === opt.id) + '">' + escapeHtml(opt.label || opt.id) + ' · ' + count + '</button>';
@@ -491,11 +500,12 @@
       return;
     }
     postJson(PATHS.apiVote, { option_id: state.selectedVoteOption, role_votes: state.selectedRoleVotes })
-      .then(result => { renderVoteRound(result); setStatus($("vote-save-status"), "Vote recorded. It will apply at an upcoming boundary.", "ok"); })
+      .then(result => { renderVoteRound(result); setStatus($("vote-save-status"), "Vote updated. The leading style applies at an upcoming boundary.", "ok"); })
       .catch(err => setStatus($("vote-save-status"), err.message, "error"));
   });
 
   bindClick("btn-submit-suggestion", () => {
+    if (!$("suggestion-box")) return;
     postJson(PATHS.apiSuggestions, { text: $("suggestion-box").value })
       .then(result => { $("suggestion-box").value = ""; setStatus($("suggestion-status"), "Suggestion " + result.suggestion.status + ": " + result.suggestion.reason, "ok"); })
       .catch(err => setStatus($("suggestion-status"), err.message, "error"));
@@ -749,6 +759,7 @@
       return;
     }
     const btn = $("btn-apply");
+    if (!btn || !$("prompt-box") || !$("drift")) return;
     btn.disabled = true;
     setStatus($("apply-status"), "Applying prompt…", null);
     const payload = {
@@ -1201,6 +1212,11 @@
       .join(" ");
   }
 
+  function optionLabelById(options, id) {
+    const match = (options || []).find(opt => opt && opt.id === id);
+    return match ? (match.label || presetLabelFromId(id)) : presetLabelFromId(id);
+  }
+
   function effectiveRolePrompt(basePrompt, presetModes, role) {
     const active = activePreset(presetModes);
     const activeRoles = (presetModes && presetModes.active_roles) || {};
@@ -1258,8 +1274,8 @@
     renderEffectivePersonaPrompts(presetModes);
     var activeProfile = presetModes.profiles[presetModes.active_profile] || {};
     renderItunesPlayer({
-      prompt: $("prompt-box").value || activeProfile.live_prompt || "",
-      psychosis_level: Number($("drift").value) / 100,
+      prompt: ($("prompt-box") && $("prompt-box").value) || activeProfile.live_prompt || "",
+      psychosis_level: $("drift") ? Number($("drift").value) / 100 : Number(activeProfile.psychosis_level || 0.25),
       tempo_bpm: activeProfile.tempo_bpm,
       key: activeProfile.key,
     });

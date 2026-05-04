@@ -189,9 +189,9 @@ If HLS is not supported by the browser or the live generator is not running, the
 
 The page also includes a **Live influence** control. Press **Apply to next section** to write `public/live-control.json`. The current generator reads that file when creating the next generated form and biases density, chord drift, texture, lead behavior, and bass stability from the prompt.
 
-## Tweak personas
+## Tweak styles and prompts
 
-Open **Personas and prompts**, edit the text boxes, then press **Save personas**. This writes `public/personas.json` through `scripts/control_server.py`.
+Open **Styles and prompts** in the admin view, edit the text boxes, then press **Save styles and prompts**. This writes `public/personas.json` through `scripts/control_server.py`.
 
 ## Voting, suggestions, and admin controls
 

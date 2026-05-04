@@ -964,6 +964,28 @@
               <button class="btn btn-secondary" id="btn-admin-force-fallback" type="button">Toggle archive fallback</button>
               <span class="save-status" id="admin-override-status" role="status"></span>
             </div>
+            <label class="form-label" for="prompt-box">Prompt the ensemble in natural language</label>
+            <textarea id="prompt-box" name="prompt-box" class="prompt-box" placeholder="Example: make it haunted, sparse, metallic, and unstable"></textarea>
+            <div class="drift-row">
+              <label class="form-label" for="drift">Psychosis level</label>
+              <input id="drift" name="drift" class="slider" type="range" min="0" max="100" value="25" />
+              <span class="drift-readout" id="drift-readout">25 %</span>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-primary" id="btn-apply" type="button">
+                <span aria-hidden="true">▶</span> Apply prompt and start live audio
+              </button>
+              <button class="btn btn-secondary" id="btn-archive" type="button">
+                <span aria-hidden="true">∿</span> Play latest archived recording
+              </button>
+              <span class="save-status" id="apply-status" role="status"></span>
+            </div>
+            <label class="form-label" for="suggestion-box">Suggest a future style for admin review</label>
+            <textarea id="suggestion-box" name="suggestion-box" class="prompt-box" placeholder="Example: warm 6/8 bedroom-pop with fretless bass and choir pads"></textarea>
+            <div class="form-actions">
+              <button class="btn btn-secondary" id="btn-submit-suggestion" type="button">Submit suggestion</button>
+              <span class="save-status" id="suggestion-status" role="status"></span>
+            </div>
             <div class="session-list" id="admin-suggestions"></div>
             <div class="session-list" id="collapse-metrics"></div>
           </div>
@@ -993,22 +1015,6 @@
               </div>
             </div>
           <p class="form-label" id="hint-conductor">Conductor status: loading…</p>
-          <label class="form-label" for="prompt-box">Prompt the ensemble in natural language</label>
-          <textarea id="prompt-box" name="prompt-box" class="prompt-box" placeholder="Example: make it haunted, sparse, metallic, and unstable"></textarea>
-          <div class="drift-row">
-            <label class="form-label" for="drift">Psychosis level</label>
-            <input id="drift" name="drift" class="slider" type="range" min="0" max="100" value="25" />
-            <span class="drift-readout" id="drift-readout">25 %</span>
-          </div>
-          <div class="form-actions">
-            <button class="btn btn-primary" id="btn-apply" type="button">
-              <span aria-hidden="true">▶</span> Apply prompt and start live audio
-            </button>
-            <button class="btn btn-secondary" id="btn-archive" type="button">
-              <span aria-hidden="true">∿</span> Play latest archived recording
-            </button>
-            <span class="save-status" id="apply-status" role="status"></span>
-          </div>
         </div>
       </section>
 
@@ -1024,12 +1030,6 @@
           <div class="form-actions">
             <button class="btn btn-secondary" id="btn-submit-vote" type="button">Submit vote</button>
             <span class="save-status" id="vote-save-status" role="status"></span>
-          </div>
-          <label class="form-label" for="suggestion-box">Suggest a future style for admin review</label>
-          <textarea id="suggestion-box" name="suggestion-box" class="prompt-box" placeholder="Example: warm 6/8 bedroom-pop with fretless bass and choir pads"></textarea>
-          <div class="form-actions">
-            <button class="btn btn-secondary" id="btn-submit-suggestion" type="button">Submit suggestion</button>
-            <span class="save-status" id="suggestion-status" role="status"></span>
           </div>
         </div>
       </section>
@@ -1200,11 +1200,11 @@
         </article>
       </section>
 
-      <!-- Personas -->
-      <details class="strip" id="panel-personas">
+      <!-- Styles and prompts -->
+      <details class="strip admin-only" id="panel-personas">
         <summary>
           <span class="caret" aria-hidden="true">▶</span>
-          Personas and prompts
+          Styles and prompts
           <span class="plus" aria-hidden="true">+</span>
         </summary>
         <div class="strip-body">
@@ -1214,7 +1214,7 @@
               <div class="preset-active" id="preset-active-label">Active: None</div>
             </div>
             <div class="preset-grid" id="preset-grid"></div>
-            <p class="preset-desc" id="preset-description">Preset overlays sit on top of your base personas without overwriting them.</p>
+            <p class="preset-desc" id="preset-description">Preset overlays sit on top of your base styles without overwriting them.</p>
             <div class="preset-role-toggles" id="preset-role-toggles"></div>
             <div class="form-actions">
               <span class="save-status" id="preset-status" role="status"></span>
@@ -1223,7 +1223,7 @@
           <p class="form-label">Texture is the ambient glue: pads, drones, shimmer, and slow color so the band does not sound like dry MIDI. Edits save to <code>public/personas.json</code>.</p>
           <div class="persona-list" id="persona-list"></div>
           <div class="form-actions">
-            <button class="btn btn-secondary" id="btn-save-personas" type="button">Save personas</button>
+          <button class="btn btn-secondary" id="btn-save-personas" type="button">Save styles and prompts</button>
             <span class="save-status" id="personas-status" role="status"></span>
           </div>
         </div>
